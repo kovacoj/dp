@@ -73,6 +73,28 @@ Use search topics and contexts that are narrow enough to be useful. For mixed pr
 4. Use concrete terminology: rounding, unit roundoff, conditioning, backward error, residual error, solution error, throughput, memory traffic.
 5. When appropriate, connect numerical issues to least-squares sketching and to the later climate-model application.
 
+## Mathematical register and notation
+
+The user prefers a style shaped by numerical analysis, functional analysis, and differential geometry.
+
+Follow these rules when drafting or revising thesis text:
+
+1. Default to a numerical-analysis framing: emphasize perturbation, conditioning, stability, approximation quality, and algorithmic consequences.
+2. Use functional-analysis language where it improves clarity, even for finite-dimensional problems.
+3. Prefer concepts such as linear operators, adjoints, inner-product spaces, induced norms, orthogonal projections, and subspaces when that phrasing is more natural than purely coordinate-based matrix language.
+4. Use geometric language when it genuinely sharpens the reader's understanding of embeddings, projections, least-squares structure, or conditioning.
+5. Differential-geometric language is acceptable only when it clarifies structure; do not use it as ornament.
+6. Keep the computational meaning visible at all times: dimensions, sketch sizes, residuals, conditioning, floating-point effects, and implementation tradeoffs must remain explicit.
+7. Prefer one coherent notation system over a mixture of disconnected matrix and operator viewpoints.
+
+## Specific notation guidance
+
+1. Treat matrices as concrete representations of linear maps when useful.
+2. Use adjoint notation when it is conceptually cleaner than transpose notation, but do not force it in places where standard numerical linear algebra notation is clearer.
+3. Prefer operator-norm language when discussing stability or conditioning.
+4. In least-squares discussions, keep both viewpoints present: approximation in an inner-product space and the explicit residual minimization problem.
+5. Avoid abstraction that hides the algorithm or the numerical phenomenon under discussion.
+
 ## Specific instruction for the mixed-precision chapter
 
 If the user asks for a strong introductory chapter or opening section on mixed-precision arithmetic, you should aim to:

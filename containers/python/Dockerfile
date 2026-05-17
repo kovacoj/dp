@@ -36,5 +36,5 @@ RUN pip install --no-cache-dir uv jupyterlab
 USER ${USERNAME}
 WORKDIR /workspace
 
-ENTRYPOINT ["tini", "--"]
+ENTRYPOINT ["tini", "-s", "--"]
 CMD ["bash"]

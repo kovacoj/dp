@@ -1,5 +1,11 @@
 \chapter{Numerical Experiments} \label{ch:experiments}
 
-This chapter will collect the numerical experiments used to compare sketch families, sketch sizes, and precision choices.
+This chapter collects the numerical experiments used to compare sketch families, sketch sizes, and precision choices. Its role is not merely illustrative. The experiments are the point at which the operator-theoretic and perturbation-based discussion of the previous chapters is confronted with actual computations carried out in finite precision.
 
-Particular attention will be paid to residual error, solution error, condition numbers, and computational tradeoffs.
+The central quantities of interest are residual error, solution error, conditioning of the reduced systems, and the computational tradeoffs induced by different sketches and arithmetic formats. In particular, the experiments are designed to separate several effects that are conceptually distinct but numerically entangled: approximation error due to sketching, error amplification due to conditioning, and perturbations introduced by reduced precision.
+
+The first group of experiments studies Gaussian and structured sketches as functions of the sketch dimension. Here the main question is how accurately the compressed operator preserves the least-squares geometry of the original problem, and how this preservation is reflected in residual quality and solution quality. The second group of experiments introduces mixed precision into the same framework. There the guiding question is no longer only whether the reduced problem is small, but whether it remains numerically well behaved when some stages are executed in lower precision.
+
+The experimental methodology is therefore aligned with the main numerical-analysis themes of the thesis. One does not ask only whether a method is faster, but also which quantity deteriorates first, how strongly the deterioration correlates with condition numbers, and whether the observed loss is consistent with the perturbation mechanisms suggested by the theoretical discussion. This perspective is especially important in randomized algorithms, because a method may look acceptable at the level of residuals while exhibiting a much more fragile behavior at the level of solution error or conditioning.
+
+The purpose of the chapter is thus twofold. On the one hand, it provides evidence for the practical behavior of the sketched least-squares methods studied earlier. On the other hand, it identifies the regimes in which mixed precision appears safe, beneficial, or numerically questionable. Those observations then prepare the transition to the application chapter, where the same issues are examined in a less synthetic computational setting.

@@ -23,4 +23,15 @@ test_that("sketch_lstsq returns a solution vector with expected length", {
 
     expect_length(fit$x, 10)
     expect_true(is.numeric(fit$residual_norm))
+    expect_true(is.numeric(fit$condition_number))
+})
+
+test_that("gaussian_lstsq_experiment returns the expected metric columns", {
+    result <- gaussian_lstsq_experiment(n = 20, d = 5, s_values = 5:8, trials = 3, seed = 1)
+
+    expect_equal(
+        colnames(result$history),
+        c("s", "mean_abs_error", "mean_residual_ratio", "mean_solution_error", "mean_condition_number")
+    )
+    expect_equal(nrow(result$history), 4)
 })

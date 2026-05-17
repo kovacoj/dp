@@ -1,44 +1,29 @@
-% Randomized LS in MATLAB with higher precision (Symbolic Math Toolbox)
+% Driver script for the Gaussian sketched least-squares experiment.
+
 clear; clc;
 
-digits(30);                 % increase precision (adjust as needed)
-rng(0);
+result = randLS_experiment();
+history = result.history;
 
-n = 100;
-d = 10;
+figure;
+semilogy(history(:, 1), history(:, 2), 'LineWidth', 1.5); grid on; hold on;
+xline(2 * (result.options.d + 1), '--k');
+xlabel('s'); ylabel('mean(|xhat\_mean - x|)');
 
-A = vpa(randn(n,d));
-x = vpa(ones(d,1));
-b = A*x;
-
-k = 1e1;
-
-s_vals = 1:(n-1);
-history = zeros(numel(s_vals), 2);
-
-for ii = 1:numel(s_vals)
-    s = s_vals(ii);
-
-    xhat_sum = vpa(zeros(d,1));
-    inv_sqrt_s = 1/sqrt(vpa(s));
-
-    for j = 1:k
-        S  = vpa(randn(s,n)) * inv_sqrt_s;   % N(0, 1/s)
-        As = S*A;
-        bs = S*b;
-
-        % least-squares solution of min ||As*x - bs||_2
-        xhat = As \ bs;                      % tall system => LS via QR internally
-        xhat_sum = xhat_sum + xhat;
-    end
-
-    xhat_mean = xhat_sum / vpa(k);
-    err = mean(abs(xhat_mean - x));         % mean absolute error across coordinates
-
-    history(ii,:) = [double(s), double(err)];  % convert for plotting
+if result.use_symbolic
+    title('Randomized least squares: mean absolute error (symbolic/high precision)');
+else
+    title('Randomized least squares: mean absolute error (double precision)');
 end
 
-semilogy(history(:,1), history(:,2), 'LineWidth', 1.5); grid on; hold on;
-xline(2*(d+1), '--k');
-xlabel('s'); ylabel('mean(|xhat\_mean - x|)');
-title('Randomized least squares: error vs sketch size s');
+figure;
+semilogy(history(:, 1), history(:, 3), 'LineWidth', 1.5); grid on; hold on;
+xline(2 * (result.options.d + 1), '--k');
+xlabel('s'); ylabel('mean relative residual');
+title('Randomized least squares: residual ratio');
+
+figure;
+semilogy(result.cond_history(:, 1), result.cond_history(:, 2), 'LineWidth', 1.5); grid on; hold on;
+xline(2 * (result.options.d + 1), '--k');
+xlabel('s'); ylabel('mean \kappa(SA)');
+title('Randomized least squares: conditioning of the sketched system');

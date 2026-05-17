@@ -14,10 +14,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libfontconfig1-dev \
     libfreetype6-dev \
     libgit2-dev \
+    libgsl-dev \
     libharfbuzz-dev \
     libfribidi-dev \
     libpng-dev \
     libssl-dev \
+    libuv1-dev \
     libxml2-dev \
     littler \
     less \
@@ -41,10 +43,10 @@ RUN set -eux; \
         useradd --uid "${UID}" --gid "${GROUP_NAME}" --create-home --shell /bin/bash "${USERNAME}"; \
     fi
 
-RUN R -q -e "install.packages(c('devtools','languageserver','Matrix','energy','FNN','testthat','roxygen2'), repos = Sys.getenv('CRAN_REPO'))"
+RUN R -q -e "pkgs <- c('FNN','testthat','roxygen2','remotes'); install.packages(pkgs, repos = Sys.getenv('CRAN_REPO')); missing <- pkgs[!vapply(pkgs, requireNamespace, logical(1), quietly = TRUE)]; if (length(missing) > 0) stop(sprintf('Missing R packages after install: %s', paste(missing, collapse = ', ')))"
 
 USER ${USERNAME}
 WORKDIR /workspace
 
-ENTRYPOINT ["tini", "--"]
+ENTRYPOINT ["tini", "-s", "--"]
 CMD ["bash"]

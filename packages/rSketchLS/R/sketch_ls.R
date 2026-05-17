@@ -31,11 +31,13 @@ sketch_lstsq <- function(A, b, s = NULL, method = c("gaussian", "rademacher", "s
     Sb <- S %*% b
     fit <- qr.solve(SA, Sb)
     residual <- as.vector(A %*% fit - b)
+    condition_number <- kappa(SA)
 
     list(
         x = fit,
         residual = residual,
         residual_norm = sqrt(sum(residual^2)),
+        condition_number = condition_number,
         sketch_size = s,
         method = method
     )

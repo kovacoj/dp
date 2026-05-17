@@ -38,6 +38,28 @@ This project contains a diploma thesis manuscript, supporting code, local litera
 4. Treat climate-model material primarily as an application unless the user explicitly asks otherwise.
 5. Make the prose readable for a mathematically literate reader, not only for a domain specialist.
 
+## Mathematical style and notation
+
+The user prefers a mathematically mature style influenced by numerical analysis, functional analysis, and differential geometry.
+
+When writing thesis prose or choosing notation:
+
+1. Default to a numerical-analysis viewpoint: stability, conditioning, perturbation, approximation, operator behavior, and algorithmic consequences should be foregrounded.
+2. Prefer functional-analysis-flavored notation and language where it clarifies the argument, even in finite-dimensional linear algebra.
+3. It is acceptable, and often desirable, to speak of linear maps, operators, adjoints, inner-product spaces, induced norms, and subspaces rather than using only matrix-calculus phrasing.
+4. When discussing least-squares problems, embeddings, or projections, geometric language is welcome if it sharpens intuition.
+5. Differential-geometric wording may be used when it genuinely clarifies geometric structure, but it should not become decorative or distract from the numerical-analysis core.
+6. Preserve contact with computation: do not let abstract notation obscure dimensions, conditioning, floating-point effects, or implementational consequences.
+7. Use notation consistently once introduced, and prefer conceptual economy over constant switching between matrix and operator viewpoints.
+
+## Concrete notation preferences
+
+1. When natural, write spaces such as \(\R^d\) as finite-dimensional inner-product spaces and describe matrices as representations of linear operators.
+2. Use adjoint language when appropriate, especially when it is more natural than purely coordinate-based transpose language.
+3. Prefer operator norm and induced norm terminology when discussing stability and conditioning.
+4. For least-squares problems, keep both the geometric and computational viewpoints visible: approximation in a normed or inner-product space, but also explicit residuals, conditioning, and solver behavior.
+5. Avoid gratuitously abstract notation if it hides the algorithm being analyzed.
+
 ## Suggested mixed-precision workflow
 
 When asked to write or improve the mixed-precision chapter:

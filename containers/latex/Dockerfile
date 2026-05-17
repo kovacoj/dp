@@ -34,5 +34,5 @@ RUN set -eux; \
 USER ${USERNAME}
 WORKDIR /workspace/thesis
 
-ENTRYPOINT ["tini", "--"]
+ENTRYPOINT ["tini", "-s", "--"]
 CMD ["bash"]
