@@ -53,7 +53,7 @@ jobs:
         run: verify Thesis/*.pdf | tee /dev/stderr | grep -qE 'nonCompliant="0" failedJobs="0"'
 
   deploy:
-    name: Deploy latest PDF and README to gh-pages
+    name: Deploy latest PDF and landing page to gh-pages
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     needs: build
@@ -66,6 +66,11 @@ jobs:
       - name: Commit and push to gh-pages
         run: |
           cd Thesis
+          mv README.md index.md
+          cat > _config.yml <<'EOF'
+          title: Statistical Post-processing of Multidimensional Climate Data
+          description: Diploma thesis by Bc. Jan Kovacovsky
+          EOF
           git init -b temp
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
