@@ -18,7 +18,36 @@ If \(S\) approximately preserves the geometry of the subspace carrying the least
 
 The importance of this formulation is that it separates two questions that are easy to conflate. The first is approximation: does the sketch preserve enough geometry for the reduced problem to represent the original one faithfully? The second is computation: can the sketch be formed and used quickly enough to justify replacing the classical solver? Early least-squares algorithms already showed that this tradeoff can be favorable in practice \cite{rokhlin2008fastls,avron2010blendenpik}.
 
-\section{Sketch Families}
+\section{Subspace Embeddings}
+
+The geometric engine behind sketching is the notion of an oblivious subspace embedding (OSE). The definition is simple but its consequences run deep.
+
+\begin{definition}[Oblivious Subspace Embedding] \label{def:ose}
+	Let \(\varepsilon \in (0,1)\) and \(\delta \in (0,1)\). A distribution \(\mathcal{S}\) over \(\R^{s \times n}\) is a \((d,\varepsilon,\delta)\)-oblivious subspace embedding if, for every fixed subspace \(\mathcal{V} \subseteq \R^n\) of dimension at most \(d\),
+	\[
+		\Pr_{S \sim \mathcal{S}}\!\Bigl[\,\forall\, v \in \mathcal{V}:\; (1-\varepsilon)\|v\|_2 \le \|Sv\|_2 \le (1+\varepsilon)\|v\|_2\Bigr] \ge 1 - \delta.
+	\]
+\end{definition}
+
+The key point is that the sketching matrix is drawn independently of the subspace. In the least-squares context, the relevant subspace is the column space of \(A\) (or the augmented space spanned by the columns of \([A\; b]\)), and the OSE property guarantees that the geometry of that subspace is approximately preserved after compression.
+
+The OSE condition can be interpreted as a uniform Johnson--Lindenstrauss property on subspaces. This connection is made precise by the Johnson--Lindenstrauss lemma, which provides the foundational concentration result.
+
+\begin{lemma}[Johnson--Lindenstrauss] \label{lem:jl}
+	Let \(\varepsilon \in (0,1)\) and let \(\mathcal{P}\) be a finite set of \(p\) points in \(\R^n\). If \(S \in \R^{s \times n}\) has entries drawn independently from \(\mathcal{N}(0,1/s)\) and
+	\[
+		s \ge \frac{4\log p}{\varepsilon^2/2 - \varepsilon^3/3},
+	\]
+	then with probability at least \(1 - 1/p\),
+	\[
+		(1-\varepsilon)\|u - v\|_2 \le \|S(u-v)\|_2 \le (1+\varepsilon)\|u - v\|_2
+	\]
+	for every pair \(u,v \in \mathcal{P}\).
+\end{lemma}
+
+The JL lemma is a statement about finite point sets, but the extension to continuous subspaces follows by a net argument. A \(\gamma\)-net of the unit ball in a \(d\)-dimensional subspace has cardinality at most \((3/\gamma)^d\); applying JL to this net and using the Lipschitz continuity of the sketching operator yields the subspace embedding property. The net argument is the standard bridge from pointwise concentration to uniform geometric control.
+
+\section{Gaussian Sketches}
 
 The first sketch family considered in this thesis is the Gaussian sketch. Its entries are independent normal random variables with variance \(1/s\), so that
 \[
@@ -28,13 +57,107 @@ This scaling is chosen so that the sketch is isotropic in expectation. In partic
 \[
 	\mathbb{E}\|Sx\|_2^2 = \|x\|_2^2,
 \]
-which explains why Gaussian sketches are a natural baseline in both theory and computation. Their main advantage is conceptual cleanliness: concentration arguments and subspace-embedding results are comparatively transparent in the Gaussian setting \cite{martinsson2020randnla,woodruff2014sketching}.
+which explains why Gaussian sketches are a natural baseline in both theory and computation.
 
-Closely related are dense sign sketches, often called Rademacher sketches, whose entries are independent \(\pm 1/\sqrt{s}\). They retain much of the same isotropic behavior while replacing Gaussian sampling by a simpler discrete distribution. From the numerical point of view, the distinction matters less at the level of abstract guarantees than at the level of implementation cost and memory traffic.
+The main theoretical advantage of the Gaussian model is that the concentration of quadratic forms under Gaussian matrices is well understood. The following result is the central embedding guarantee.
 
-The third family relevant here is the subsampled randomized Hadamard transform (SRHT). Structured sketches of this type combine random signs, a fast orthogonal transform, and subsampling. They are attractive because they preserve much of the embedding behavior of dense sketches while allowing substantially faster sketch formation when the data layout permits fast transforms. Tropp's analysis of the SRHT is especially important for understanding how structured embeddings inherit subspace-preservation guarantees with explicit dimension requirements \cite{tropp2011srht,martinsson2020randnla}.
+\begin{proposition}[Gaussian OSE] \label{prop:gaussian_ose}
+	Let \(S \in \R^{s \times n}\) be a Gaussian sketch with entries \(S_{ij} \sim \mathcal{N}(0,1/s)\). For any fixed matrix \(U \in \R^{n \times d}\) with orthonormal columns and any \(\varepsilon \in (0,1)\),
+	\[
+		\Pr\!\Bigl[\|U^\top S^\top S U - I_d\|_2 > \varepsilon\Bigr] \le 2d \cdot \exp\!\Bigl(-\frac{s(\varepsilon^2 - \varepsilon^3)}{4}\Bigr).
+	\]
+	In particular, if \(s \ge 4(d\log d + \log(2/\delta))/\varepsilon^2\), then \(S\) is a \((d,\varepsilon,\delta)\)-OSE.
+\end{proposition}
 
-For this thesis, the contrast between Gaussian, Rademacher, and SRHT sketches is essential. Gaussian sketches are the cleanest theoretical baseline, Rademacher sketches provide a simple dense alternative, and SRHT-type sketches represent the first genuinely structured option whose computational appeal may become decisive for large problems.
+\begin{proof}[Proof sketch]
+	For a fixed unit vector \(u \in \R^n\), the random variable \(\|Su\|_2^2\) is a sum of \(s\) independent \(\chi^2_1/s\) variables. By standard concentration inequalities for chi-squared random variables (the Laurent--Massart bound),
+	\[
+		\Pr\!\Bigl[\bigl|\|Su\|_2^2 - 1\bigr| > \varepsilon\Bigr] \le 2\exp\!\Bigl(-\frac{s(\varepsilon^2 - \varepsilon^3)}{4}\Bigr).
+	\]
+	To pass from a single direction to the entire subspace, cover the unit ball of \(\operatorname{col}(U)\) by a \(\gamma\)-net of cardinality at most \((3/\gamma)^d\) with \(\gamma = \varepsilon/2\). A union bound over the net, combined with the Lipschitz property of the operator norm, yields the stated inequality. The dimension requirement follows by setting the failure probability to \(\delta\) and solving for \(s\).
+\end{proof}
+
+The logarithmic dependence on the ambient dimension \(n\) is absent: the embedding quality depends only on the intrinsic dimension \(d\) and the sketch size \(s\). This dimension-free character is the theoretical reason why Gaussian sketches are powerful regardless of how large the original problem is.
+
+Closely related are dense sign sketches, often called Rademacher sketches, whose entries are independent \(\pm 1/\sqrt{s}\). They retain much of the same isotropic behavior while replacing Gaussian sampling by a simpler discrete distribution. The OSE guarantee for Rademacher sketches is essentially identical to \Cref{prop:gaussian_ose}, with the same sketch-size requirement up to constants; the proof uses the Hanson--Wright inequality instead of chi-squared concentration.
+
+\section{The Subsampled Randomized Hadamard Transform}
+
+The third family relevant here is the subsampled randomized Hadamard transform (SRHT). Structured sketches of this type combine random signs, a fast orthogonal transform, and subsampling. They are attractive because they preserve much of the embedding behavior of dense sketches while allowing substantially faster sketch formation when the data layout permits fast transforms.
+
+The SRHT is defined as follows. Let \(n = 2^p\) for some integer \(p\). Denote by \(H_n \in \R^{n \times n}\) the normalized Walsh--Hadamard matrix (satisfying \(H_n H_n^\top = I_n\)), and let \(D \in \R^{n \times n}\) be a diagonal matrix whose diagonal entries are independent uniform random signs. Let \(R \in \R^{s \times n}\) be a matrix that selects \(s\) rows uniformly at random without replacement. The SRHT sketch is then
+\[
+	S = \frac{1}{\sqrt{s}}\, R\, H_n\, D.
+\]
+
+The Hadamard matrix can be applied in \(O(n\log n)\) operations via the fast Walsh--Hadamard transform, which makes the total cost of forming \(SA\) equal to \(O(nd\log s)\) instead of the \(O(nds)\) cost of a dense Gaussian sketch. The tradeoff is that the SRHT introduces additional combinatorial structure that makes the analysis more delicate.
+
+\begin{proposition}[SRHT Embedding] \label{prop:srht_ose}
+	Let \(S \in \R^{s \times n}\) be an SRHT sketch. For any fixed matrix \(U \in \R^{n \times d}\) with orthonormal columns and any \(\varepsilon \in (0,1)\),
+	\[
+		\Pr\!\Bigl[\|U^\top S^\top S U - I_d\|_2 > \varepsilon\Bigr] \le \delta
+	\]
+	provided \(s \ge C\,\frac{d\log n}{\varepsilon^2}\,\log\!\bigl(\frac{d\log n}{\varepsilon^2\delta}\bigr)\) for a universal constant \(C\).
+\end{proposition}
+
+The dependence on \(\log n\) is the price of the structure: the SRHT needs a slightly larger sketch than the Gaussian model to achieve the same embedding quality, but the gain in sketch-formation time can be substantial. For this thesis, the contrast between Gaussian and SRHT sketches is essential. Gaussian sketches are the cleanest theoretical baseline, and SRHT-type sketches represent the first genuinely structured option whose computational appeal may become decisive for large problems. The SRHT also plays a methodological role: because it is deterministic once the random signs and row indices are fixed, it is easier to reason about in a mixed-precision setting where the randomization and the arithmetic perturbations should be kept conceptually separate.
+
+\section{Residual and Solution Guarantees}
+
+The subspace-embedding property leads directly to approximation guarantees for the sketched least-squares problem. The following result is the basic accuracy statement for the sketch-and-solve paradigm.
+
+\begin{proposition}[Sketched LS Residual Bound] \label{prop:sketched_residual}
+	Let \(A \in \R^{n \times d}\) have full column rank, let \(x_\star = \arg\min\|Ax - b\|_2\), and let \(\hat x = \arg\min\|SAx - Sb\|_2\). If \(S\) is a \((d+1,\varepsilon,\delta)\)-OSE with \(\varepsilon < 1\), then with probability at least \(1-\delta\),
+	\[
+		\|A\hat x - b\|_2 \le \frac{1+\varepsilon}{1-\varepsilon}\,\|Ax_\star - b\|_2.
+	\]
+\end{proposition}
+
+\begin{proof}[Proof sketch]
+	Decompose \(b = Ax_\star + r_\star\) where \(r_\star\) is the optimal residual. Write \(\hat x = x_\star + h\). The embedding property on the subspace \(\operatorname{col}([A\; r_\star])\) gives
+	\[
+		(1-\varepsilon)\|Ah + r_\star\|_2^2 \le \|S(Ah + r_\star)\|_2^2 \le (1+\varepsilon)\|Ah + r_\star\|_2^2.
+	\]
+	Since \(\hat x\) minimizes \(\|S(Ax - b)\|_2\), the optimality of \(\hat x\) for the sketched problem implies
+	\[
+		\|SA\hat x - Sb\|_2^2 \le \|SAx_\star - Sb\|_2^2 \le (1+\varepsilon)\|r_\star\|_2^2.
+	\]
+	Combining the two inequalities and solving for \(\|A\hat x - b\|_2\) yields the stated bound.
+\end{proof}
+
+The residual guarantee is natural but not the only quantity of interest. In many applications, one also cares about the solution error \(\|\hat x - x_\star\|_2\). A bound on the solution error requires additional control over the geometry of the problem, specifically the extent to which the residual contributes to the solution perturbation.
+
+\begin{proposition}[Sketched LS Solution Error] \label{prop:sketched_solution}
+	Under the same hypotheses as \Cref{prop:sketched_residual},
+	\[
+		\|\hat x - x_\star\|_2 \le \frac{\varepsilon}{1-\varepsilon}\,\kappa_2(A)\,\frac{\|Ax_\star - b\|_2}{\|A\|_2\,\|x_\star\|_2}\,\|x_\star\|_2 + O(\varepsilon^2).
+	\]
+\end{proposition}
+
+The solution error involves the condition number of the original matrix. This is expected: when the least-squares problem is far from consistent (the residual is large), the sketch can perturb the solution by a larger relative amount. In the consistent case where \(\|Ax_\star - b\|_2 = 0\), the bound simplifies, but the residual bound is typically the more informative statement.
+
+These two propositions together explain the experimental observations: residual quality stabilizes quickly as \(s\) grows, while solution error depends on both \(\varepsilon\) and \(\kappa_2(A)\). The transition from residual-dominated to solution-error-dominated behavior is one of the main features that the numerical experiments are designed to capture.
+
+\section{Conditioning of the Sketched System}
+
+Even when the sketch provides a good embedding in exact arithmetic, the numerical behavior of the reduced problem depends critically on the conditioning of \(SA\). The following result connects the embedding quality to the spectral properties of the compressed operator.
+
+\begin{proposition}[Conditioning of the Sketched Matrix] \label{prop:sketched_cond}
+	Let \(A \in \R^{n \times d}\) have full column rank with singular values \(\sigma_1 \ge \cdots \ge \sigma_d > 0\), and let \(S\) be a \((d,\varepsilon,\delta)\)-OSE. Then with probability at least \(1 - \delta\),
+	\[
+		(1-\varepsilon)\,\sigma_d \le \sigma_{\min}(SA) \le \sigma_{\max}(SA) \le (1+\varepsilon)\,\sigma_1,
+	\]
+	and therefore
+	\[
+		\kappa_2(SA) \le \frac{1+\varepsilon}{1-\varepsilon}\,\kappa_2(A).
+	\]
+\end{proposition}
+
+This is a direct consequence of the embedding property applied to the left and right singular vectors of \(A\). The important qualitative message is that a good subspace embedding cannot dramatically worsen the condition number: if \(\varepsilon\) is small, the sketched system is only slightly less well-conditioned than the original.
+
+However, the proposition assumes exact arithmetic. In finite precision, the situation is more nuanced. The computed sketch \(\operatorname{fl}(SA)\) is a perturbation of the ideal \(SA\), and the effective condition number of the computed system may be larger than \(\kappa_2(SA)\) by an amount that depends on the precision of the sketch-forming arithmetic and on the dimensions \(n\) and \(s\). This is precisely where the interaction between randomized approximation and floating-point perturbation becomes important, and it motivates the mixed-precision analysis in \Cref{ch:mixedprecision}.
+
+In practice, the condition number of \(SA\) is a useful diagnostic. If \(\kappa_2(SA)\) remains bounded as \(s\) varies, the sketch is preserving the spectral structure of the original problem; if it grows sharply, the sketch dimension may be insufficient, or the sketch may be failing to embed the relevant subspace. The numerical experiments in \Cref{ch:experiments} track \(\kappa_2(SA)\) as a function of \(s\) for exactly this reason.
 
 \section{From Embedding to Solver}
 
