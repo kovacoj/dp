@@ -34,4 +34,25 @@ test_that("gaussian_lstsq_experiment returns the expected metric columns", {
         c("s", "mean_abs_error", "mean_residual_ratio", "mean_solution_error", "mean_condition_number")
     )
     expect_equal(nrow(result$history), 4)
+    expect_equal(result$method, "gaussian")
+})
+
+test_that("srht_lstsq_experiment returns the expected metric columns", {
+    result <- srht_lstsq_experiment(n = 16, d = 4, s_values = 8:12, trials = 3, seed = 1)
+
+    expect_equal(
+        colnames(result$history),
+        c("s", "mean_abs_error", "mean_residual_ratio", "mean_solution_error", "mean_condition_number")
+    )
+    expect_equal(nrow(result$history), 5)
+    expect_equal(result$method, "srht")
+})
+
+test_that("sketch_lstsq_experiment works with all methods", {
+    for (m in c("gaussian", "rademacher", "srht")) {
+        n_val <- if (m == "srht") 16L else 20L
+        result <- sketch_lstsq_experiment(n = n_val, d = 4, s_values = 8:10, trials = 2, method = m, seed = 1)
+        expect_equal(result$method, m)
+        expect_equal(nrow(result$history), 3)
+    }
 })
