@@ -1,53 +1,71 @@
 \chapter{Randomized Least Squares} \label{ch:randls}
 
-This chapter develops the sketching-based least-squares methods that form the algorithmic core of the thesis. The starting point is the overdetermined problem
+Randomized numerical linear algebra uses randomness as a computational resource for restructuring expensive linear algebra tasks into smaller or more informative surrogate problems. The area now covers low-rank approximation, matrix decompositions, regression, and randomized preconditioning, but overdetermined least-squares problems remain one of its clearest and most influential successes \cite{halko2011finding,martinsson2020randnla,woodruff2014sketching}.
+
+This chapter focuses on sketching-based least-squares methods, which form the algorithmic core of the thesis. The starting point is the overdetermined problem
 \[
-    \min_{x \in \R^d} \|Ax-b\|_2,
+	\min_{x \in \R^d} \|Ax-b\|_2,
 \]
 where \(A \in \R^{n \times d}\) has many more rows than columns. Interpreted geometrically, one seeks the point in the range of the linear map represented by \(A\) that is closest to \(b\). When \(n\) is large, the dominant cost lies not in the abstract existence theory, but in the repeated dense linear algebra required to solve or approximate the system.
 
-The randomized approach replaces the original problem by a smaller one. Given a sketching matrix \(S \in \R^{s \times n}\) with \(s \ll n\), one solves
-\[
-    \min_{x \in \R^d} \|SAx-Sb\|_2.
-\]
-If \(S\) approximately preserves the geometry of the range of \(A\), then the reduced problem is expected to return a solution whose residual is close to optimal while being cheaper to compute. In operator terms, \(S\) should act almost isometrically on the subspace that carries the least-squares information.
+\section{Sketch-and-Solve Principle}
 
-\section{Gaussian Sketching Model}
+The basic randomized idea is to replace the original problem by a smaller one. Given a sketching matrix \(S \in \R^{s \times n}\) with \(s \ll n\), one solves
+\[
+	\min_{x \in \R^d} \|SAx-Sb\|_2.
+\]
+If \(S\) approximately preserves the geometry of the subspace carrying the least-squares information, then the reduced problem can deliver a solution whose residual is close to optimal at a lower computational cost. In operator language, the sketch should act almost isometrically on the column space of \(A\), or more cautiously on the augmented subspace associated with both \(A\) and \(b\). This subspace-embedding viewpoint is one of the organizing principles of modern RandNLA \cite{woodruff2014sketching,martinsson2020randnla}.
+
+The importance of this formulation is that it separates two questions that are easy to conflate. The first is approximation: does the sketch preserve enough geometry for the reduced problem to represent the original one faithfully? The second is computation: can the sketch be formed and used quickly enough to justify replacing the classical solver? Early least-squares algorithms already showed that this tradeoff can be favorable in practice \cite{rokhlin2008fastls,avron2010blendenpik}.
+
+\section{Sketch Families}
 
 The first sketch family considered in this thesis is the Gaussian sketch. Its entries are independent normal random variables with variance \(1/s\), so that
 \[
-    S_{ij} \sim \mathcal{N}(0, 1/s).
+	S_{ij} \sim \mathcal{N}(0, 1/s).
 \]
-This scaling is chosen so that, in expectation, the sketch acts approximately like an isometry on Euclidean norms. In particular, for a fixed vector \(x \in \R^n\), one has the heuristic identity
+This scaling is chosen so that the sketch is isotropic in expectation. In particular, for a fixed vector \(x \in \R^n\), one has the identity
 \[
-    \mathbb{E}\|Sx\|_2^2 = \|x\|_2^2,
+	\mathbb{E}\|Sx\|_2^2 = \|x\|_2^2,
 \]
-which explains why Gaussian sketches are a natural baseline in both theory and computation. The relevant point is not merely distributional symmetry, but the fact that the sketch preserves the metric structure of vectors in expectation and, with high probability, approximately preserves it on low-dimensional subspaces.
+which explains why Gaussian sketches are a natural baseline in both theory and computation. Their main advantage is conceptual cleanliness: concentration arguments and subspace-embedding results are comparatively transparent in the Gaussian setting \cite{martinsson2020randnla,woodruff2014sketching}.
 
-The Gaussian model is mathematically convenient because it avoids combinatorial structure and makes concentration arguments comparatively clean. For that reason, it is also the first model implemented in the numerical experiments and in the accompanying code.
+Closely related are dense sign sketches, often called Rademacher sketches, whose entries are independent \(\pm 1/\sqrt{s}\). They retain much of the same isotropic behavior while replacing Gaussian sampling by a simpler discrete distribution. From the numerical point of view, the distinction matters less at the level of abstract guarantees than at the level of implementation cost and memory traffic.
+
+The third family relevant here is the subsampled randomized Hadamard transform (SRHT). Structured sketches of this type combine random signs, a fast orthogonal transform, and subsampling. They are attractive because they preserve much of the embedding behavior of dense sketches while allowing substantially faster sketch formation when the data layout permits fast transforms. Tropp's analysis of the SRHT is especially important for understanding how structured embeddings inherit subspace-preservation guarantees with explicit dimension requirements \cite{tropp2011srht,martinsson2020randnla}.
+
+For this thesis, the contrast between Gaussian, Rademacher, and SRHT sketches is essential. Gaussian sketches are the cleanest theoretical baseline, Rademacher sketches provide a simple dense alternative, and SRHT-type sketches represent the first genuinely structured option whose computational appeal may become decisive for large problems.
+
+\section{From Embedding to Solver}
+
+The sketching matrix is only one part of the algorithm. Once the reduced operator \(SA\) has been formed, one still has to solve the compressed least-squares problem in a numerically sensible way. This is where conditioning re-enters the story. A good embedding should preserve not only residual geometry but also enough spectral structure that the reduced problem remains well behaved.
+
+In practical randomized least-squares solvers, two related paradigms appear repeatedly. The first is sketch-and-solve, in which one directly solves the compressed problem. The second is sketch-and-precondition, in which the sketch is used to build a preconditioner for a more accurate iterative method or refinement procedure. Blendenpik is one of the landmark examples: it combines randomized mixing with a high-quality dense least-squares solve and shows that randomized preprocessing can improve performance without abandoning numerical linear algebra discipline \cite{avron2010blendenpik}. More recent work goes further and shows that randomized least-squares solvers can be designed to be forward stable, and in some formulations even backward stable, rather than merely fast on average \cite{epperly2024forwardstable,epperly2024stablels}.
+
+This stability question is especially important for the present thesis. It is not enough to know that a sketch preserves the least-squares objective in exact arithmetic. One also needs to know how the conditioning of \(SA\), and later of any preconditioned or refined system, interacts with the finite-precision arithmetic discussed in \Cref{ch:mixedprecision}. In that sense, modern RandNLA has moved beyond the initial question of whether randomization can accelerate least squares; it now asks under what conditions randomized solvers can be trusted as serious numerical methods \cite{murray2023randnla,martinsson2020randnla}.
 
 \section{A First Experiment}
 
 The initial computational study in this thesis is deliberately simple. A random matrix \(A \in \R^{n \times d}\) is generated together with a reference solution \(x_\star\), and the right-hand side is taken as either
 \[
-    b = Ax_\star
+	b = Ax_\star
 \]
 in the consistent case or
 \[
-    b = Ax_\star + e
+	b = Ax_\star + e
 \]
 in the noisy case, where \(e\) is a perturbation vector. For each sketch size \(s\), several independent Gaussian sketches are drawn, the sketched least-squares problems are solved, and the following quantities are recorded:
 \begin{itemize}
-    \item the mean absolute error of the averaged solution,
-    \item the residual ratio relative to the unsketched least-squares solution,
-    \item the relative solution error with respect to a reference solve,
-    \item the condition number of the sketched matrix \(SA\).
+	\item the mean absolute error of the averaged solution,
+	\item the residual ratio relative to the unsketched least-squares solution,
+	\item the relative solution error with respect to a reference solve,
+	\item the condition number of the sketched matrix \(SA\).
 \end{itemize}
 
-This experiment plays an important organizational role. Mathematically, it gives a concrete setting in which subspace embedding heuristics can be discussed. Computationally, it provides the first benchmark that is shared across the Octave prototype and the R package implementation. In that sense, it is the smallest example in the repository where the operator-theoretic picture, the numerical conditioning, and the measured computation are meant to line up exactly.
+This experiment plays an important organizational role. Mathematically, it gives a concrete setting in which subspace-embedding heuristics can be compared against observed residual and solution behavior. Computationally, it provides a common benchmark across the current prototype implementations, which already cover Gaussian, Rademacher, and SRHT sketches. In that sense, it is the smallest setting in this project where geometric approximation, conditioning of the compressed operator, and measured computation are meant to line up exactly.
 
 \section{Why This Experiment Matters}
 
-Even before formal guarantees are introduced, the experiment highlights the main questions that drive the later chapters. How large must the sketch dimension \(s\) be before the residual becomes reliably close to optimal? How does the conditioning of the compressed operator \(SA\) change as \(s\) varies? Which error metrics stabilize quickly, and which remain sensitive? Once mixed precision is introduced, the same framework also makes it possible to ask which arithmetic stages tolerate lower precision and which do not.
+Even before formal guarantees are introduced, the experiment highlights the main questions that drive the later chapters. How large must the sketch dimension \(s\) be before the residual becomes reliably close to optimal? How does the conditioning of the compressed operator \(SA\) change as \(s\) varies? Which sketch family gives the best compromise between simplicity, structure, and numerical behavior? Once mixed precision is introduced, the same framework also makes it possible to ask which arithmetic stages tolerate lower precision and which do not.
 
-The main topics to be developed further are Gaussian sketches, structured sketches such as SRHT, residual and solution guarantees, and the conditioning of the reduced systems.
+The main topics to be developed further are therefore clear: subspace embeddings as the geometric core of sketching, Gaussian and structured sketches as competing algorithmic choices, residual and solution guarantees for sketch-and-solve methods, and the conditioning and finite-precision behavior of the reduced systems. Those topics place the present thesis within the broader RandNLA literature while keeping the attention on the concrete least-squares problems that the code and experiments in this repository already target.
