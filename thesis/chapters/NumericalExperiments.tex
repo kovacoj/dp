@@ -1,11 +1,86 @@
 \chapter{Numerical Experiments} \label{ch:experiments}
 
-This chapter collects the numerical experiments used to compare sketch families, sketch sizes, and precision choices. Its role is not merely illustrative. The experiments are the point at which the operator-theoretic and perturbation-based discussion of the previous chapters is confronted with actual computations carried out in finite precision.
+This chapter specifies the experimental framework used in the repository to study randomized least-squares solvers. Its purpose is more precise than simply providing illustrations. The experiments are designed to test whether the geometric statements from \Cref{ch:randls} remain visible at the level of computed residuals, computed solutions, and condition numbers of the compressed systems. In addition, they provide the first controlled setting in which the floating-point questions from \Cref{ch:mixedprecision} can be attached to the same benchmark structure.
 
-The central quantities of interest are residual error, solution error, conditioning of the reduced systems, and the computational tradeoffs induced by different sketches and arithmetic formats. In particular, the experiments are designed to separate several effects that are conceptually distinct but numerically entangled: approximation error due to sketching, error amplification due to conditioning, and perturbations introduced by reduced precision.
+At the current stage of the project, the experiments are intentionally synthetic. This is a virtue rather than a weakness. By generating the data matrix and the reference solution directly, one can separate the effect of the sketch from the unrelated complications that arise in a downstream application. The experiments therefore play the role of a numerical laboratory: they are simple enough that one can interpret the observed behavior, but rich enough to expose the interaction between embedding quality, conditioning, and arithmetic.
 
-The first group of experiments studies Gaussian and structured sketches as functions of the sketch dimension. Here the main question is how accurately the compressed operator preserves the least-squares geometry of the original problem, and how this preservation is reflected in residual quality and solution quality. The second group of experiments introduces mixed precision into the same framework. There the guiding question is no longer only whether the reduced problem is small, but whether it remains numerically well behaved when some stages are executed in lower precision.
+\section{Experimental Objective}
 
-The experimental methodology is therefore aligned with the main numerical-analysis themes of the thesis. One does not ask only whether a method is faster, but also which quantity deteriorates first, how strongly the deterioration correlates with condition numbers, and whether the observed loss is consistent with the perturbation mechanisms suggested by the theoretical discussion. This perspective is especially important in randomized algorithms, because a method may look acceptable at the level of residuals while exhibiting a much more fragile behavior at the level of solution error or conditioning.
+The central question is how the quality of a sketched least-squares solve changes as the sketch dimension varies and as the sketch family changes. The repository currently tracks four quantities:
+\begin{itemize}
+	\item the mean absolute error of the averaged sketch solution,
+	\item the residual ratio relative to a reference least-squares solve,
+	\item the relative solution error with respect to the reference solution,
+	\item the condition number of the sketched matrix \(SA\).
+\end{itemize}
 
-The purpose of the chapter is thus twofold. On the one hand, it provides evidence for the practical behavior of the sketched least-squares methods studied earlier. On the other hand, it identifies the regimes in which mixed precision appears safe, beneficial, or numerically questionable. Those observations then prepare the transition to the application chapter, where the same issues are examined in a less synthetic computational setting.
+These quantities are chosen to reflect distinct numerical phenomena. The residual ratio measures how well the sketched problem preserves the least-squares objective. The solution error is more sensitive to conditioning and therefore detects failures that may be hidden at the residual level. The condition number of \(SA\) serves as a bridge between the two: it is not itself an error measure, but it often explains why two sketches with similar residual quality behave differently at the level of the computed solution.
+
+The present experiments are therefore not only comparisons of random projections. They are tests of how approximation quality, solver sensitivity, and arithmetic interact inside one concrete computational pipeline.
+
+\section{Synthetic Least-Squares Model}
+
+The current implementations use a common synthetic model. A matrix \(A \in \R^{n \times d}\) is generated with independent standard normal entries, and the reference solution is chosen as
+\[
+	x_\star = \mathbf{1} \in \R^d.
+\]
+The right-hand side is then formed as
+\[
+	b = Ax_\star + e,
+\]
+where \(e\) is either zero or a Gaussian perturbation scaled by a prescribed noise level. Thus the consistent and noisy regimes are both available within the same template.
+
+For each generated instance, a reference least-squares solution \(x_{\mathrm{ref}}\) is computed from the full system. In the R implementation this is done with \texttt{qr.solve}, while the Octave prototypes use the backslash solver. The reference residual
+\[
+	r_{\mathrm{ref}} = A x_{\mathrm{ref}} - b
+\]
+provides the baseline against which the sketched residuals are compared. This is important because it prevents the experiments from rewarding a sketched method merely for reducing a poorly chosen proxy quantity; every trial is measured against the corresponding unsketched least-squares solve.
+
+The synthetic model is deliberately modest. It does not yet attempt to mimic the spectral structure of a climate-data operator or the coherence patterns of an application matrix. Its role is instead to isolate the basic mechanisms of randomized least squares under controlled conditions.
+
+\section{Implemented Sketch Families}
+
+The repository currently supports three sketch families in the main R package: Gaussian sketches, Rademacher sketches, and the SRHT. The Octave prototypes presently cover Gaussian sketches and the SRHT. This division reflects the current state of the software rather than a conceptual distinction. The R package is the intended long-term implementation base, while the Octave scripts remain useful as compact numerical prototypes.
+
+The Gaussian sketch is the cleanest theoretical baseline. Because its entries are independent normal variables, it is the natural first choice when one wants to observe the behavior predicted by the OSE theory with minimal structural complications. The Rademacher sketch replaces Gaussian entries by random signs and tests how much of the same behavior survives under a simpler discrete distribution. The SRHT introduces structure and therefore changes the cost model as well as the embedding constants. In practice, it is the first sketch family in the project for which one can seriously ask whether the extra algebraic structure is worth the additional analytical care.
+
+There is one practical restriction that matters experimentally: the current SRHT implementations require the row dimension to be a power of two. The R and Octave code therefore round \(n\) upward when needed before constructing the Hadamard-based sketch. This is a concrete example of a theoretical assumption becoming an implementation condition.
+
+\section{Per-Trial Computation}
+
+For a fixed sketch size \(s\), one trial proceeds as follows. A sketching matrix \(S \in \R^{s \times n}\) is drawn, the compressed system
+\[
+	SAx \approx Sb
+\]
+is formed, and the reduced least-squares problem is solved. The computed solution for that trial is denoted by \(\hat x\). The experiment then records:
+\begin{align*}
+	\text{residual ratio}   & = \frac{\|A\hat x - b\|_2}{\|A x_{\mathrm{ref}} - b\|_2},         \\
+	\text{solution error}   & = \frac{\|\hat x - x_{\mathrm{ref}}\|_2}{\|x_{\mathrm{ref}}\|_2}, \\
+	\text{condition number} & = \kappa_2(SA).
+\end{align*}
+
+These definitions are aligned with the theoretical discussion in \Cref{ch:randls}. The residual ratio corresponds to the sketch-and-solve guarantee that the compressed problem should preserve the least-squares objective up to a controlled distortion. The solution error reflects the fact that preserving the residual geometry does not by itself guarantee an equally small perturbation in the minimizer. The condition number of \(SA\) is recorded because it quantifies one of the main mediating mechanisms between these two behaviors.
+
+In addition, the implementations track an average over independent trials at each sketch size. If \(\hat x^{(1)},\dots,\hat x^{(m)}\) are the trial solutions, the code forms their mean and reports the mean absolute error of this averaged estimator relative to the planted vector \(x_\star\). This quantity is not a standard RandNLA performance criterion, but it is useful in the present project because it exposes the variability of the trial-to-trial solutions in a simple way.
+
+\section{Parameter Sweeps}
+
+The experiments vary the sketch dimension \(s\) over a prescribed range and repeat the randomized solve several times for each value. In the current R code, the generic routine \texttt{sketch\_lstsq\_experiment} accepts the parameters \(n\), \(d\), a vector of sketch sizes, a trial count, a noise level, and the sketch family. Specialized wrappers currently expose Gaussian and SRHT runs directly, but the underlying experiment function already supports all three sketch families.
+
+The Octave scripts implement the same logic in a more direct form. The Gaussian prototype sweeps over \texttt{s\_vals = 1:99} by default for a problem of size \(n=100\), \(d=10\), while the SRHT prototype uses a coarser sweep adapted to the power-of-two requirement. In both cases, several independent sketches are drawn for each \(s\), and the recorded history stores the sketch size together with the averaged error metrics.
+
+This repeated-trial design is essential. A single randomized sketch can be atypical, especially near the lower end of the sketch-size range. Averaging over multiple trials does not remove randomness from the method, but it does make the observed trends interpretable. In particular, it helps distinguish a genuine phase transition in sketch quality from a fluctuation caused by one unfavorable draw.
+
+\section{Precision-Sensitivity Baseline}
+
+The mixed-precision part of the repository is still in an early stage, but the current Octave Gaussian experiment already contains a useful first comparison. It can run either in ordinary double precision or, when the symbolic package is available, in a higher-precision mode used as a surrogate for reduced rounding error. This is not yet a production mixed-precision implementation in the sense discussed in \Cref{ch:mixedprecision}; rather, it is a controlled way to ask whether some observed degradation is primarily geometric or primarily arithmetic.
+
+That distinction matters. If increasing arithmetic precision leaves the curves essentially unchanged, the dominant limitation is likely the sketch itself or the conditioning of the reduced problem. If the higher-precision run materially improves the computed behavior, then floating-point perturbations are already large enough to be visible at this synthetic scale. In that sense, the current precision experiment is best viewed as a diagnostic baseline for later mixed-precision work, not as the final form of that work.
+
+\section{How the Results Should Be Read}
+
+The main qualitative expectation is straightforward. As the sketch dimension grows, the residual ratio should approach one, because the compressed problem should increasingly preserve the geometry of the original least-squares problem. The solution error should also generally improve, but often less monotonically and sometimes more slowly, because it depends more strongly on the conditioning of the sketched operator. The condition number \(\kappa_2(SA)\) should therefore be read alongside the error curves rather than as a secondary diagnostic.
+
+This perspective is especially important when comparing dense and structured sketches. A structured sketch may be attractive because it is cheaper to apply, yet still produce larger fluctuations or require a larger sketch size before the residual and solution metrics stabilize. Conversely, a dense Gaussian sketch may look numerically cleaner while being less attractive computationally. The experiments are designed precisely to make that tradeoff visible.
+
+At the present stage, the chapter should therefore be read primarily as a methodology and interpretation chapter. The benchmark structure is already concrete and implemented, but the full experimental campaign, especially on the mixed-precision side, is still being expanded. Even so, the framework is already sufficiently explicit to support the central thesis question: whether randomized compression and altered arithmetic can be studied within one coherent numerical-analysis picture rather than as two unrelated implementation tricks.

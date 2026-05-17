@@ -90,7 +90,7 @@ The SRHT is defined as follows. Let \(n = 2^p\) for some integer \(p\). Denote b
 	S = \frac{1}{\sqrt{s}}\, R\, H_n\, D.
 \]
 
-The Hadamard matrix can be applied in \(O(n\log n)\) operations via the fast Walsh--Hadamard transform, which makes the total cost of forming \(SA\) equal to \(O(nd\log s)\) instead of the \(O(nds)\) cost of a dense Gaussian sketch. The tradeoff is that the SRHT introduces additional combinatorial structure that makes the analysis more delicate.
+The Hadamard matrix can be applied in \(O(n\log n)\) operations via the fast Walsh--Hadamard transform, which makes the total cost of forming \(SA\) equal to \(O(nd\log n)\) instead of the \(O(nds)\) cost of a dense Gaussian sketch. The tradeoff is that the SRHT introduces additional combinatorial structure that makes the analysis more delicate.
 
 \begin{proposition}[SRHT Embedding] \label{prop:srht_ose}
 	Let \(S \in \R^{s \times n}\) be an SRHT sketch. For any fixed matrix \(U \in \R^{n \times d}\) with orthonormal columns and any \(\varepsilon \in (0,1)\),
@@ -167,6 +167,19 @@ In practical randomized least-squares solvers, two related paradigms appear repe
 
 This stability question is especially important for the present thesis. It is not enough to know that a sketch preserves the least-squares objective in exact arithmetic. One also needs to know how the conditioning of \(SA\), and later of any preconditioned or refined system, interacts with the finite-precision arithmetic discussed in \Cref{ch:mixedprecision}. In that sense, modern RandNLA has moved beyond the initial question of whether randomization can accelerate least squares; it now asks under what conditions randomized solvers can be trusted as serious numerical methods \cite{murray2023randnla,martinsson2020randnla}.
 
+\section{Sketch-and-Precondition}
+
+The sketch-and-solve viewpoint is conceptually clean, but it is not always the best numerical endpoint. A second paradigm uses the sketch to build a preconditioner for the original problem rather than treating the reduced problem as the final approximation. In broad terms, one computes a factorization of the compressed matrix \(SA\), uses that factorization to define a right preconditioner \(R^{-1}\), and then solves the transformed problem
+\[
+	\min_y \|AR^{-1}y - b\|_2,
+	\qquad x = R^{-1}y,
+\]
+typically by an iterative method or by refinement around a high-quality residual computation.
+
+This shift in viewpoint matters because the sketch no longer bears the entire burden of solution accuracy. Its role is to improve the conditioning of the operator seen by the downstream solver. If \(SA\) captures the geometry of the column space well enough, then the preconditioned matrix \(AR^{-1}\) can become substantially better behaved than the original least-squares system. Blendenpik is the classical example of this philosophy: randomized mixing and sampling are used to construct a preconditioner, but the final method remains firmly tied to stable least-squares solving rather than replacing it by a one-shot compressed surrogate \cite{avron2010blendenpik}.
+
+For the present thesis, this paradigm is important for two reasons. First, it clarifies that randomized least squares is not exhausted by direct sketch-and-solve methods; preconditioning is equally central to the modern literature. Second, it provides a natural bridge to mixed precision. Once the sketch is interpreted as a preconditioner-construction stage, one can ask a more refined numerical question: which parts of that construction may be carried out in lower precision without destroying the conditioning gains that justify the randomized step in the first place? This is exactly the kind of coupled approximation-and-arithmetic question that later experiments should address.
+
 \section{A First Experiment}
 
 The initial computational study in this thesis is deliberately simple. A random matrix \(A \in \R^{n \times d}\) is generated together with a reference solution \(x_\star\), and the right-hand side is taken as either
@@ -177,7 +190,7 @@ in the consistent case or
 \[
 	b = Ax_\star + e
 \]
-in the noisy case, where \(e\) is a perturbation vector. For each sketch size \(s\), several independent Gaussian sketches are drawn, the sketched least-squares problems are solved, and the following quantities are recorded:
+in the noisy case, where \(e\) is a perturbation vector. The current Octave prototype uses Gaussian sketches, while the R package extends the same benchmark structure to Rademacher sketches and the SRHT. For each sketch size \(s\), several independent sketches are drawn, the sketched least-squares problems are solved, and the following quantities are recorded:
 \begin{itemize}
 	\item the mean absolute error of the averaged solution,
 	\item the residual ratio relative to the unsketched least-squares solution,
