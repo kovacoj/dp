@@ -1,5 +1,45 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "lsp": true,
+  "formatter": {
+    "ruff": {
+      "command": [
+        "uv",
+        "tool",
+        "run",
+        "ruff",
+        "format",
+        "$FILE"
+      ],
+      "extensions": [
+        ".py"
+      ]
+    },
+    "latexindent": {
+      "command": [
+        "latexindent",
+        "-w",
+        "$FILE"
+      ],
+      "extensions": [
+        ".tex"
+      ]
+    },
+    "prettier": {
+      "command": [
+        "npx",
+        "prettier",
+        "--write",
+        "$FILE"
+      ],
+      "extensions": [
+        ".md",
+        ".json",
+        ".yml",
+        ".yaml"
+      ]
+    }
+  },
   "instructions": [
     "AGENTS.md",
     ".opencode/AGENTS.md"
@@ -19,5 +59,8 @@
       "enabled": true,
       "timeout": 300000
     }
+  },
+  "permission": {
+    "bash": "ask"
   }
 }
