@@ -23,3 +23,6 @@
 
 ## ignore "old" PDF files
 *_old.pdf
+
+## Local backup snapshots
+*.bak*

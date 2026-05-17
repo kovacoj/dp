@@ -5,11 +5,15 @@ __pycache__/
 
 # R workspace and package build artifacts
 .Rhistory
+.Rlibrary/
 .Rproj.user/
 *.Rcheck/
 packages/**/src/*.o
 packages/**/src/*.so
 packages/**/src/*.dll
+
+# Local research artifacts
+research/
 
 # Local container overrides
 containers/.env
