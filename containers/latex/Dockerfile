@@ -15,6 +15,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     tini \
     && rm -rf /var/lib/apt/lists/*
 
+RUN tlmgr install keytheorems
+
 RUN set -eux; \
     if getent group "${GID}" >/dev/null; then \
         GROUP_NAME="$(getent group "${GID}" | cut -d: -f1)"; \
