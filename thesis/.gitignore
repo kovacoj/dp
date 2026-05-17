@@ -1,6 +1,16 @@
 ## LaTeX auxiliary files:
 .aux
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.run.xml
 *.synctex.gz
+*.synctex(busy)
 *.synctex.gz(busy)
 
 ## Since the main PDF file is automatically generated with GitHub Actions

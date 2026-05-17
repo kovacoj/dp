@@ -10,3 +10,6 @@ __pycache__/
 packages/**/src/*.o
 packages/**/src/*.so
 packages/**/src/*.dll
+
+# Local container overrides
+containers/.env

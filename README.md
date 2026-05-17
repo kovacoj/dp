@@ -47,3 +47,17 @@ The climate-model material is important, but it is an application target rather 
 ## Working Plan
 
 The concrete thesis roadmap lives in `docs/thesis-roadmap.md`.
+
+## Containerized Development
+
+This repo includes a Docker-based development setup under `containers/` for environments where local installation is restricted.
+
+Available services:
+
+- `python`
+- `jupyter`
+- `r`
+- `octave`
+- `latex`
+
+See `containers/README.md` for usage details.

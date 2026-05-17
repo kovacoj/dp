@@ -1,0 +1,98 @@
+name: dp
+
+x-workspace: &workspace
+  volumes:
+    - ..:/workspace
+  stdin_open: true
+  tty: true
+  init: true
+
+services:
+  python:
+    <<: *workspace
+    build:
+      context: ..
+      dockerfile: containers/python/Dockerfile
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+        USERNAME: ${USERNAME:-dev}
+    working_dir: /workspace
+    command: sleep infinity
+    environment:
+      UV_CACHE_DIR: /home/${USERNAME:-dev}/.cache/uv
+    ports:
+      - "8888:8888"
+    volumes:
+      - ..:/workspace
+      - python-uv-cache:/home/${USERNAME:-dev}/.cache/uv
+
+  jupyter:
+    <<: *workspace
+    build:
+      context: ..
+      dockerfile: containers/python/Dockerfile
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+        USERNAME: ${USERNAME:-dev}
+    working_dir: /workspace
+    command: >-
+      bash -lc "uv sync && jupyter lab
+      --ip 0.0.0.0
+      --port 8888
+      --no-browser
+      --ServerApp.token=''
+      --ServerApp.password=''"
+    environment:
+      UV_CACHE_DIR: /home/${USERNAME:-dev}/.cache/uv
+    ports:
+      - "8888:8888"
+    volumes:
+      - ..:/workspace
+      - python-uv-cache:/home/${USERNAME:-dev}/.cache/uv
+
+  r:
+    <<: *workspace
+    build:
+      context: ..
+      dockerfile: containers/r/Dockerfile
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+        USERNAME: ${USERNAME:-dev}
+    working_dir: /workspace
+    command: sleep infinity
+    environment:
+      R_LIBS_USER: /home/${USERNAME:-dev}/R/library
+    volumes:
+      - ..:/workspace
+      - r-library:/home/${USERNAME:-dev}/R/library
+
+  octave:
+    <<: *workspace
+    build:
+      context: ..
+      dockerfile: containers/octave/Dockerfile
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+        USERNAME: ${USERNAME:-dev}
+    working_dir: /workspace
+    command: sleep infinity
+
+  latex:
+    <<: *workspace
+    build:
+      context: ..
+      dockerfile: containers/latex/Dockerfile
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+        USERNAME: ${USERNAME:-dev}
+    working_dir: /workspace/thesis
+    command: sleep infinity
+
+volumes:
+  python-uv-cache:
+  r-library:
