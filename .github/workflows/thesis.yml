@@ -26,7 +26,8 @@ jobs:
       - name: Compile LaTeX document
         uses: xu-cheng/latex-action@v3
         with:
-          root_file: thesis/thesis.tex
+          working_directory: thesis
+          root_file: thesis.tex
           texlive_version: latest
           extra_system_packages: coreutils icu inkscape
 
