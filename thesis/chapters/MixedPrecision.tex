@@ -1,51 +1,152 @@
 \chapter{Mixed-Precision Arithmetic} \label{ch:mixedprecision}
 
-Mixed-precision arithmetic uses more than one floating-point format within the same algorithm. At first sight the idea seems merely technological: perform the bulk of the work in a cheaper arithmetic and reserve the expensive format for the stages that appear numerically delicate. From the standpoint of numerical analysis, however, the issue is deeper. A change of precision changes the perturbation model of the algorithm itself, and therefore changes the effective map that is actually computed. The central question is not only what is gained in throughput or memory traffic, but how the altered arithmetic reshapes stability, conditioning, and attainable accuracy \cite{abdelfattah2021mixedsurvey,higham2022mixed}.
+Mixed-precision arithmetic means that one algorithm uses more than one
+floating-point format. The idea is simple. One tries to perform the expensive part
+of the computation in a cheaper arithmetic and keeps the more accurate format for
+the numerically sensitive stages. In numerical linear algebra, however, this is not
+only a matter of implementation. A change of precision changes the perturbation
+model of the algorithm itself, and therefore changes the map that is actually
+computed \cite{abdelfattah2021mixedsurvey,higham2022mixed}.
 
-This chapter is intentionally introductory. Its purpose is to fix the concepts that will matter later for randomized least-squares algorithms: floating-point representation, rounding models, conditioning, and the way mixed precision interacts with algorithmic structure. The emphasis is therefore not only on floating-point formats themselves, but on how they perturb the action of the linear operators that later appear in least-squares solvers and sketching procedures. In particular, the chapter is written with a later question in mind: when an algorithm already contains approximation through randomized compression, how much additional perturbation from lower precision can be tolerated before the numerical character of the method changes substantially?
+This chapter introduces the basic concepts needed later for randomized
+least-squares solvers. In particular, we discuss floating-point representation,
+rounding, conditioning, and the way mixed precision interacts with algorithmic
+structure. The main question for the later chapters is the following: if the
+algorithm already contains approximation through randomized sketching, how much
+additional perturbation from lower precision can be tolerated?
 
 \section{Floating-Point Model}
 
-Floating-point arithmetic replaces the continuum of real numbers by a finite set of representable values. A normalized floating-point number has the schematic form
+Floating-point arithmetic replaces the continuum of real numbers by a finite set of
+representable values. A normalized floating-point number has the schematic form
 \[
 	x = \pm m\beta^e,
 \]
-where \(\beta\) is the base, \(m\) is the significand, and \(e\) is the exponent. Since most real numbers are not exactly representable, every arithmetic computation is accompanied by rounding. The finite arithmetic is thus not a small decoration attached to an exact algorithm; it is the computational environment in which the algorithm exists.
+where \(\beta\) is the base, \(m\) is the significand, and \(e\) is the exponent.
+Since most real numbers are not exactly representable, every arithmetic operation
+involves rounding. Thus finite precision is not a small correction to an exact
+algorithm. It is the environment in which the algorithm exists.
 
 For rounding to nearest, the standard model writes one basic operation as
 \[
 	\operatorname{fl}(x \circ y) = (x \circ y)(1+\delta), \qquad |\delta| \le u,
 \]
-where \(u\) is the unit roundoff of the working format. Lower precision means larger \(u\), a smaller dynamic range, and therefore a smaller safety margin against cancellation, overflow, and the accumulation of rounding errors. From the numerical-analysis point of view, the central observation is that changing precision changes the size of the admissible perturbation at every arithmetic step. Put differently, the forward action of the computed algorithm is replaced by a nearby, but not identical, operator whose distance from the ideal one is controlled only up to a precision-dependent scale. This is the basic reason why low precision can be attractive computationally and dangerous numerically at the same time \cite{higham2022mixed,higham2023lowprecisions}.
+where \(u\) is the unit roundoff of the working format. Lower precision means a
+larger \(u\), a smaller dynamic range, and therefore a smaller safety margin against
+cancellation, overflow, and accumulation of rounding errors. The important point
+is that changing precision changes the size of the perturbation allowed at every
+arithmetic step. This is why low precision can be attractive computationally and
+dangerous numerically at the same time \cite{higham2022mixed,higham2023lowprecisions}.
 
-The usefulness of the standard rounding model lies precisely in this perturbative interpretation. It allows one to analyze an algorithm not as a sequence of exact operations performed badly, but as a nearby computation performed in a systematically altered arithmetic. Once one passes from a single operation to inner products, matrix-vector products, or matrix-matrix products, the perturbations are no longer controlled only by \(u\), but also by the dimensions and algebraic structure of the computation. For later least-squares applications, this shift of viewpoint is essential: residuals, normal equations, orthogonal factorizations, and sketching operations all inherit their own precision-dependent perturbations, and those perturbations scale differently across the stages of the algorithm.
+The standard rounding model is useful because it allows us to interpret the
+computed algorithm as a nearby problem. Once we pass from one scalar operation
+to inner products, matrix-vector products, or matrix-matrix products, the
+perturbations are no longer controlled only by \(u\), but also by the dimensions
+and the algebraic structure of the computation. For least-squares problems, this is
+especially important. Residuals, orthogonal factorizations, normal equations, and
+sketching operations all inherit their own precision-dependent perturbations.
 
 \section{Why Mixed Precision Matters}
 
-Mixed precision has become central because current hardware no longer treats all precisions equally. Modern CPUs and especially accelerators often deliver much higher throughput for half- or single-precision kernels than for double precision, while also reducing memory traffic and storage costs. Reviews by Abdelfattah et al. and Higham and Mary make clear that this is not a niche phenomenon but a broad shift in the computational landscape of numerical linear algebra \cite{abdelfattah2021mixedsurvey,higham2022mixed}. What used to be a question of implementation detail has therefore become a structural design question for algorithms themselves.
+Mixed precision has become important because current hardware does not treat all
+precisions equally. Modern CPUs and especially accelerators often provide much
+higher throughput for half- or single-precision kernels than for double precision,
+while also reducing memory traffic and storage costs. Therefore, what used to be
+an implementation detail has become a design question for algorithms themselves
+\cite{abdelfattah2021mixedsurvey,higham2022mixed}.
 
-Still, the real appeal is algorithmic rather than technological. Many linear algebra procedures are not uniformly sensitive to rounding. Bulk matrix products may tolerate lower precision reasonably well, whereas factorizations, orthogonalization steps, residual computations, or correction solves may require a more accurate format. In that sense, mixed precision is best viewed as a way of deciding where accuracy is genuinely needed in the action of the algorithm, instead of paying for it everywhere. The distinction is not between important and unimportant operations in an abstract sense, but between stages whose perturbations are damped by the surrounding computation and stages whose perturbations are amplified by conditioning or by geometric loss of information. Mixed precision is therefore a question of error placement: one chooses not only how much arithmetic is performed, but where the larger perturbations are allowed to enter the computational pipeline.
+The real appeal, however, is algorithmic. Many linear algebra procedures are not
+equally sensitive to rounding. Bulk matrix products may tolerate lower precision,
+whereas factorizations, orthogonalization, residual computations, or correction
+solves may require a more accurate format. Mixed precision is therefore best
+understood as a way of deciding where accuracy is needed and where it is not.
+One does not choose only how much arithmetic is performed, but also where the
+larger perturbations are allowed to enter the computation.
 
 \section{Error Sources and Conditioning}
 
-In linear algebra computations, several error mechanisms act simultaneously. The data may already be perturbed when stored in low precision. Each arithmetic operation contributes a local rounding error. These local perturbations then accumulate through matrix products, factorizations, and iterative processes. Finally, the whole effect is filtered through conditioning: a well-conditioned problem may absorb such perturbations harmlessly, while an ill-conditioned one may amplify them. Thus the relevant object is not only the arithmetic error in isolation, but the arithmetic error as propagated by the underlying operator and by the geometry of the subspaces involved in the computation. This is why forward error, backward error, and conditioning must be kept conceptually distinct: mixed precision changes the perturbations introduced by the algorithm, while the problem itself determines how violently those perturbations are magnified.
+In linear algebra computations, several error sources act at the same time. The
+data may already be perturbed when stored in low precision. Each arithmetic
+operation contributes a local rounding error. These perturbations accumulate
+through matrix products, factorizations, and iterative processes. Finally, the whole
+effect is filtered through conditioning. A well-conditioned problem may absorb the
+perturbation harmlessly, while an ill-conditioned one may amplify it strongly.
+Therefore, forward error, backward error, and conditioning must be kept distinct.
+Mixed precision changes the perturbation introduced by the algorithm, while the
+problem itself determines how much this perturbation is amplified.
 
-This point is especially important for least-squares problems. One must distinguish between the conditioning of the approximation problem itself and the conditioning of the algebra actually used to solve it. The latter may involve normal equations, QR factorizations, augmented systems, or preconditioned iterative refinement, each with its own sensitivity. In geometric terms, one may say that the approximation problem lives on a particular range space, while the chosen algorithm introduces auxiliary operators whose conditioning need not mirror the conditioning of the original problem. Recent work on mixed-precision least squares shows that lower precision can be highly effective, but only within conditioning regimes that still permit stable refinement or correction \cite{higham2021lowerprecision,carson2020threeprecision,gao2025mixedprecision}.
+This is especially important for least-squares problems. One must distinguish
+between the conditioning of the approximation problem itself and the conditioning
+of the algebra actually used to solve it. The latter may involve normal equations,
+QR factorizations, augmented systems, or preconditioned iterative refinement.
+Recent work on mixed-precision least squares shows that lower precision can be
+effective, but only in conditioning regimes that still allow stable refinement or
+correction \cite{higham2021lowerprecision,carson2020threeprecision,gao2025mixedprecision}.
 
 \section{Mixed Precision in Linear Algebra Algorithms}
 
-The classical prototype is iterative refinement: perform the expensive solve in lower precision, compute a more accurate residual in higher precision, and use the residual to correct the solution. This idea is old, but modern hardware has made it newly relevant. Foundational mixed-precision work showed that one can often recover double-precision accuracy while exploiting cheaper lower-precision factorization steps, and more recent implementations on GPUs demonstrate substantial speed and energy gains when tensor-core arithmetic is used carefully \cite{langou2006exploiting,haidar2020tensorcores,higham2022mixed}. From a functional-analytic viewpoint, one may regard refinement as a mechanism that repeatedly applies a correction operator using a more accurate evaluation of the residual map. Numerically, its success depends on the contraction properties of the induced error-propagation operator and therefore on the conditioning regime in which the algorithm is run.
+The classical example is iterative refinement. One performs the expensive solve in
+lower precision, computes a more accurate residual in higher precision, and uses
+this residual to correct the solution. This idea is old, but modern hardware has
+made it newly important. Foundational work showed that one can often recover
+double-precision accuracy while exploiting cheaper lower-precision factorization
+steps, and more recent GPU implementations show substantial speed gains when
+tensor-core arithmetic is used carefully \cite{langou2006exploiting,haidar2020tensorcores,higham2022mixed}.
 
-For least-squares problems the situation is subtler than for square linear systems, because orthogonality, residual quality, and conditioning of augmented formulations all matter. This is why mixed-precision least-squares solvers often combine low-precision bulk work with higher-precision residuals, QR-based corrections, or Krylov refinement steps \cite{higham2021lowerprecision,carson2020threeprecision}. The issue is not merely whether a linear system can be solved cheaply, but whether the approximation to the projection onto the range of the data operator remains sufficiently faithful under the chosen arithmetic. In particular, the stages that construct the subspace information and the stages that measure the residual need not tolerate the same level of perturbation.
+For least-squares problems the situation is more subtle than for square linear
+systems, because orthogonality, residual quality, and conditioning of augmented
+formulations all matter. This is why mixed-precision least-squares solvers often
+combine low-precision bulk work with higher-precision residuals, QR-based
+corrections, or Krylov refinement steps \cite{higham2021lowerprecision,carson2020threeprecision}. The main issue is not only whether the problem can be solved
+cheaply, but whether the approximation to the projection onto the range of the
+data operator remains sufficiently accurate.
+
+Recent work extends this picture beyond standard least squares. Mixed-precision
+FGMRES-based iterative refinement has been developed for weighted least squares,
+and related augmented-system approaches have been proposed for constrained and
+generalized least-squares problems \cite{carson2024wlsir,gao2025mixedprecision}.
+The common lesson is that lower precision is most useful in the bulk linear
+algebra that constructs an approximate solve or preconditioner, while the residual
+and correction stages must remain sufficiently accurate to control the final error.
 
 \section{Connection to Randomized Numerical Linear Algebra}
 
-Randomized algorithms add a second layer of approximation before floating-point effects are even considered. A sketching matrix \(S\) replaces the original least-squares problem by a reduced one involving \(SA\) and \(Sb\). Mixed precision therefore enters at several distinct points: in storing the data, in forming the compressed operator, in solving the reduced problem, and in any refinement step applied afterward. The numerical analysis becomes correspondingly layered: one must account simultaneously for the distortion caused by the sketch and for the perturbations caused by the arithmetic in which that sketch is formed and solved with.
+Randomized algorithms add a second approximation before floating-point effects
+are even considered. A sketching matrix \(S\) replaces the original least-squares
+problem by a reduced one involving \(SA\) and \(Sb\). Mixed precision can then
+enter at several places: in storing the data, in forming the compressed operator,
+in solving the reduced problem, and in any refinement step that follows.
 
-These stages need not have the same numerical requirements. If the dominant cost lies in forming \(SA\), low-precision matrix multiplication may be attractive. If the reduced problem is ill-conditioned, however, that gain may be nullified unless the subsequent solve or residual computation is performed more carefully. The distinction is especially sharp because sketch formation and reduced solving play different numerical roles: the first decides how accurately the relevant subspace geometry is transported into the compressed problem, while the second decides how accurately that already-perturbed reduced problem is resolved. The guiding view of this thesis is therefore that sketching error and floating-point error should be analysed together as coupled perturbations of the original least-squares map, not treated as separate afterthoughts. Only such a joint viewpoint can distinguish a harmless implementation choice from a change that materially alters the effective geometry of the compressed problem.
+These stages need not have the same numerical requirements. If the dominant cost
+lies in forming \(SA\), low-precision matrix multiplication may be attractive. If
+the reduced problem is ill-conditioned, however, that gain may disappear unless
+the subsequent solve or residual computation is more accurate. Recent work makes
+this point explicit. Mixed-precision analysis of sketching-based preconditioners
+shows that one can choose separate precisions for the sketching and factorization
+stages and still obtain an effective preconditioner for GMRES-based iterative
+refinement, provided the perturbations remain compatible with the conditioning of
+the least-squares problem \cite{carson2024mixedsketching}. On the implementation
+side, hardware-oriented work on random projection exploits the fact that the
+random matrix itself may tolerate reduced precision better than the data matrix or
+the final solve \cite{ootomo2023mixedprojection}.
+
+The guiding view of this thesis is therefore the following. Sketching error and
+floating-point error should be analyzed together as coupled perturbations of the
+original least-squares problem. In the sketch-and-solve setting, one asks whether
+the computed reduced problem still represents the original one faithfully enough.
+In the sketch-and-precondition setting, one asks whether lower precision preserves
+enough of the conditioning improvement for the downstream solver to remain
+effective.
 
 \section{Role in This Thesis}
 
-Within this thesis, mixed precision is not an isolated side topic. It is one of the lenses through which randomized least-squares methods will be evaluated. The central question is not whether lower precision is universally safe, but where it is safe, where it is useful, and where it changes the numerical character of the method too much to justify the computational gain. The later chapters therefore treat precision not as a final implementation parameter, but as part of the mathematical specification of the algorithm.
+Within this thesis, mixed precision is not a side topic. It is one of the main ways
+in which randomized least-squares methods are evaluated. The central question is
+not whether lower precision is always safe, but where it is safe, where it is useful,
+and where it changes the numerical character of the method too much to justify
+the computational gain.
 
-The later chapters return to this question in experiments with randomized least squares and, eventually, in a climate-data workflow. The aim is modest but important: to understand mixed precision as part of algorithm design, rather than as a final implementation tweak applied after the mathematics has already been decided. In particular, the numerical experiments are organised so that one can observe separately when loss of accuracy is driven mainly by insufficient sketch dimension, when it is driven mainly by conditioning, and when reduced precision becomes the dominant source of degradation.
+The later chapters return to this question in numerical experiments and, later, in
+the climate-data workflow. The aim is modest but important: to understand mixed
+precision as part of algorithm design, not as a final implementation tweak applied
+after the mathematics has already been fixed.

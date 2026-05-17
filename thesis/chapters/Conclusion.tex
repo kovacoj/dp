@@ -1,9 +1,28 @@
 \chapter{Conclusion} \label{ch:conclusion}
 
-This chapter summarizes the main theoretical and numerical conclusions of the thesis and outlines directions for further work. The unifying theme is that randomized approximation and mixed-precision arithmetic should not be treated as independent sources of computational improvement. In least-squares problems, both act directly on the numerical structure of the operator one is trying to solve with, and both are filtered through conditioning.
+In this thesis, we studied randomized methods for overdetermined least-squares
+problems and their behavior in mixed-precision arithmetic. The main point is that
+randomized approximation and reduced precision should not be treated as two
+independent sources of computational improvement. In least-squares problems,
+both act on the same operator, and both are filtered through conditioning.
 
-From the theoretical side, the thesis emphasizes that sketching methods are valuable not only because they reduce dimension, but because they preserve enough of the least-squares geometry on the relevant subspace to make the reduced problem meaningful. From the numerical side, the thesis emphasizes that the usefulness of lower precision is inseparable from stability considerations: the same arithmetic choice may be harmless in one conditioning regime and unacceptable in another.
+From the theoretical side, the thesis shows why sketching methods are useful.
+Their role is not only to reduce dimension, but to preserve enough of the
+least-squares geometry for the reduced problem or preconditioned problem to
+remain meaningful. From the numerical side, the thesis shows that the usefulness
+of lower precision depends on stability. The same arithmetic choice may be safe
+for one conditioning regime and unacceptable for another.
 
-The experiments and the application chapter are intended to sharpen this message rather than merely confirm it. They ask where the methods are reliable, where they are computationally advantageous, and where their failure modes begin to dominate the potential gain. In that sense, the thesis aims less at a universal recommendation than at a more structured understanding of the tradeoff surface between accuracy, conditioning, precision, and computational cost.
+The experiments and the application chapter are meant to make this picture more
+concrete. They ask where the methods are reliable, where they are computationally
+advantageous, and where their failure modes begin to dominate the possible gain.
+For this reason, the thesis does not aim at one universal recommendation. Its goal
+is rather to give a clearer description of the tradeoff between accuracy,
+conditioning, precision, and computational cost.
 
-Natural directions for future work include a deeper error analysis for specific sketch families in mixed precision, more systematic comparisons of reduced-precision implementations, and a broader study of how these techniques behave in realistic application pipelines. From the present point of view, however, the central contribution is already clear: randomized numerical linear algebra and mixed precision are most informative when they are analyzed together, in a framework that respects both geometry and computation.
+Natural directions for later work include a more detailed error analysis for
+particular sketch families in mixed precision, more systematic comparisons of
+reduced-precision implementations, and a broader study of realistic application
+pipelines. At the present stage, however, the central conclusion is already clear:
+randomized numerical linear algebra and mixed precision are most informative
+when they are analyzed together.

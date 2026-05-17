@@ -2,28 +2,47 @@
 \chapter{Notation \& Conventions} \label{ch:notation}
 \markboth{Notation \& Conventions}{Notation \& Conventions}
 
-Throughout the thesis, uppercase Latin letters such as \(A\), \(S\), and \(Q\) denote matrices, but they are often viewed as concrete representations of linear maps between finite-dimensional inner-product spaces. Vectors are denoted by lowercase letters such as \(x\) and \(b\). For a least-squares problem we typically write \(A \in \R^{n \times d}\) with \(n \ge d\), understanding \(A\) as the matrix of a linear map from \(\R^d\) into \(\R^n\), and we consider the overdetermined problem
+Throughout the thesis, uppercase Latin letters such as \(A\), \(S\), and \(Q\)
+denote matrices. At the same time, they are often interpreted as concrete
+representations of linear maps between finite-dimensional inner-product spaces.
+Vectors are denoted by lowercase letters such as \(x\) and \(b\). For a least-
+squares problem we usually write \(A \in \R^{n \times d}\) with \(n \ge d\), and we
+consider the overdetermined problem
 \[
-    \min_{x \in \R^d} \|Ax-b\|_2.
+	\min_{x \in \R^d} \|Ax-b\|_2.
 \]
 
-The symbol \(S\) is reserved for a sketching matrix, or equivalently for a linear map that compresses the ambient data space. A sketched least-squares problem therefore has the form
+The symbol \(S\) is reserved for a sketching matrix, or equivalently for a linear
+map that compresses the ambient data space. A sketched least-squares problem
+therefore has the form
 \[
-    \min_{x \in \R^d} \|SAx-Sb\|_2.
+	\min_{x \in \R^d} \|SAx-Sb\|_2.
 \]
 
-Unless stated otherwise, \(\|\cdot\|_2\) denotes the Euclidean norm for vectors and the induced operator norm for matrices, while \(\|\cdot\|_F\) denotes the Frobenius norm. The condition number of a nonsingular matrix \(M\) in the Euclidean norm is written as
+Unless stated otherwise, \(\|\cdot\|_2\) denotes the Euclidean norm for vectors and
+the induced operator norm for matrices, while \(\|\cdot\|_F\) denotes the Frobenius
+norm. The condition number of a nonsingular matrix \(M\) in the Euclidean norm is
+written as
 \[
-    \kappa_2(M) = \|M\|_2 \|M^{-1}\|_2
+	\kappa_2(M) = \|M\|_2 \|M^{-1}\|_2
 \]
-and is interpreted as the sensitivity of the associated linear system to perturbations.
+and is interpreted as the sensitivity of the associated linear system to
+perturbations.
 
-Floating-point quantities are discussed using the standard model of rounding to nearest. The unit roundoff of a format is denoted by \(u\). When mixed precision is used, different unit roundoffs may appear in different parts of the same algorithm; these are distinguished by subscripts such as \(u_\ell\) for lower precision and \(u_h\) for higher precision.
+Floating-point quantities are discussed using the standard model of rounding to
+nearest. The unit roundoff of a format is denoted by \(u\). When mixed precision
+is used, different unit roundoffs may appear in different parts of the same
+algorithm. These are distinguished by subscripts such as \(u_\ell\) for lower
+precision and \(u_h\) for higher precision.
 
 In numerical experiments, the terms \enquote{solution error} and \enquote{residual error} are used in the following sense:
 \begin{itemize}
-    \item solution error compares an approximation \(\hat x\) directly with a reference solution \(x_\star\), typically through \(\|\hat x - x_\star\|_2\) or a relative variant,
-    \item residual error measures how well \(\hat x\) approximates the data vector \(b\) through quantities such as \(\|A\hat x - b\|_2\).
+	\item solution error compares an approximation \(\hat x\) directly with a reference solution \(x_\star\), typically through \(\|\hat x - x_\star\|_2\) or a relative variant,
+	\item residual error measures how well \(\hat x\) approximates the data vector \(b\) through quantities such as \(\|A\hat x - b\|_2\).
 \end{itemize}
 
-Gaussian sketches, structured sketches, and mixed-precision variants are introduced more carefully in later chapters, but the notation fixed here remains standard throughout the text. In particular, the manuscript moves freely between matrix language and the corresponding operator viewpoint whenever that shift clarifies the numerical question under discussion.
+Gaussian sketches, structured sketches, and mixed-precision variants are defined
+more carefully in the later chapters. The notation fixed here remains standard
+throughout the text. We also move freely between matrix language and the
+corresponding operator viewpoint whenever this makes the numerical question
+clearer.
