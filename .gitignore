@@ -1,2 +1,12 @@
 .venv/
 __pycache__/
+.ipynb_checkpoints/
+.DS_Store
+
+# R workspace and package build artifacts
+.Rhistory
+.Rproj.user/
+*.Rcheck/
+packages/**/src/*.o
+packages/**/src/*.so
+packages/**/src/*.dll
