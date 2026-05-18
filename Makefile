@@ -21,7 +21,7 @@ latex-shell:
 	$(COMPOSE) run --rm latex bash
 
 thesis:
-	$(COMPOSE) run --rm latex latexmk thesis
+	./bin/latex-build
 
 jupyter:
 	$(COMPOSE) up jupyter
