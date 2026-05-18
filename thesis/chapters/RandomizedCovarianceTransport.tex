@@ -30,7 +30,8 @@ and similarly
 \[
 	u_{f,ij} = \frac{\operatorname{rank}(\widetilde X_f(i,j)) - \tfrac12}{m}
 \]
-for the future sample. We then define
+for the future sample. Ties are handled by average ranks; any fixed deterministic
+tie-breaking rule would serve equally well. We then define
 \[
 	Z_X(i,j) = \Phi^{-1}(u_{X,ij}),
 	\qquad
@@ -106,6 +107,57 @@ with an analogous approximation for \(C_Y\). The transport map is then built fro
 \]
 The computational advantage is immediate: the numerically demanding work is concentrated in matrix products of the form \(Z\Omega\) and \(Z^\top(Z\Omega)\), while the eigenanalysis is transferred to the small dense matrices \(B_X\) and \(B_Y\).
 
+\begin{proposition}[Randomized covariance approximation]
+	Let \(C \in \R^{p \times p}\) be symmetric positive semidefinite, and let \(Q\)
+	be produced by a randomized range finder with target rank \(r\) and oversampling
+	parameter \(q\). Then the compression error
+	\[
+		\|(I-QQ^\top)C\|_2
+	\]
+	is controlled by the spectral tail of \(C\) beyond rank \(r\). In particular,
+	standard range-finder bounds imply that there exist oversampling-dependent
+	constants \(c_{r,q}\) and \(d_{r,q}\) such that
+	\[
+		\mathbb{E}\,\|(I-QQ^\top)C\|_2
+		\le
+		c_{r,q}\,\mu_{r+1}(C)
+		+
+		d_{r,q}\left(\sum_{j>r} \mu_j(C)^2\right)^{1/2},
+	\]
+	where \(\mu_1(C) \ge \mu_2(C) \ge \cdots \ge 0\) are the eigenvalues of
+	\(C\) in nonincreasing order \cite[Chs.~10--11]{halko2011finding}
+	\cite[Sec.~8]{martinsson2020randnla}.
+\end{proposition}
+
+\begin{proof}[Proof sketch]
+	This is the standard randomized range-finder estimate specialized to a symmetric
+	positive semidefinite matrix. Since \(C\) is self-adjoint, its singular values are
+	precisely the eigenvalues \(\mu_j(C)\).
+\end{proof}
+
+Moreover, the regularized matrix functions of a low-rank surrogate can be applied
+without forming a full dense \(p \times p\) matrix. If \(Q \in \R^{p \times r}\) has
+orthonormal columns and \(B \in \R^{r \times r}\) is symmetric positive
+semidefinite, then
+\[
+	(QBQ^\top + \lambda I)^{-1/2}
+	=
+	\lambda^{-1/2} I
+	+
+	Q\bigl((B+\lambda I_r)^{-1/2} - \lambda^{-1/2} I_r\bigr)Q^\top,
+\]
+and similarly
+\[
+	(QBQ^\top + \lambda I)^{1/2}
+	=
+	\lambda^{1/2} I
+	+
+	Q\bigl((B+\lambda I_r)^{1/2} - \lambda^{1/2} I_r\bigr)Q^\top.
+\]
+These identities show that the transport layer only needs matrix functions of the
+small core matrix \(B + \lambda I_r\), together with applications of \(Q\) and
+\(Q^\top\).
+
 The point is not only efficiency. A low-rank approximation introduces an explicit randomized error scale. Once this scale is visible, it becomes meaningful to ask whether lower precision is acceptable because its rounding error remains smaller than the approximation error already introduced by the randomized compression.
 
 \section{Mixed Precision and Balancing Inexactness}
@@ -124,7 +176,23 @@ Accordingly, the computed covariance approximation should be written as
 	\qquad
 	\widehat C_Y = C_Y + E_{\mathrm{rand},Y} + E_{\mathrm{fp},Y},
 \]
-where \(E_{\mathrm{rand}}\) denotes randomized approximation error and \(E_{\mathrm{fp}}\) floating-point error. The key regime is the balanced one,
+where \(E_{\mathrm{rand}}\) denotes randomized approximation error and \(E_{\mathrm{fp}}\) floating-point error. A concrete floating-point model enters already at the sample matrix level. If the dominant product is formed in lower precision with unit roundoff \(u_\ell\), then one may write
+\[
+	\widehat Y_X
+	=
+	\operatorname{fl}_{u_\ell}\!\left(\frac1n Z_X^\top(Z_X\Omega)\right)
+	=
+	C_X\Omega + \Delta Y_X,
+\]
+and analogously for \(\widehat Y_Y\). Under the standard matrix-product rounding model,
+\[
+	\|\Delta Y_X\|_2
+	\lesssim
+	\gamma_n^{(u_\ell)}\,\frac{\|Z_X\|_2^2}{n}\,\|\Omega\|_2,
+	\qquad
+	\gamma_n^{(u_\ell)} = \frac{n u_\ell}{1-n u_\ell},
+\]
+with the same form for \(\Delta Y_Y\) \cite{higham2022mixed}. Thus the floating-point contribution depends not only on the unit roundoff, but also on the accumulation length, the scale of the latent data, the norm of the sketching operator, and on whether accumulation is performed in low or high precision. The key regime is the balanced one,
 \[
 	\|E_{\mathrm{fp}}\| \lesssim \|E_{\mathrm{rand}}\|,
 \]
@@ -218,11 +286,18 @@ statements.
 \end{proposition}
 
 \begin{proof}[Proof sketch]
-	These bounds express the scalar derivative behavior of
-	\(t \mapsto t^{-1/2}\) and \(t \mapsto t^{1/2}\) through spectral calculus. The
-	important qualitative point is the scaling: the inverse square root is more
-	sensitive near small eigenvalues, with amplification proportional to
-	\(\alpha_0^{-3/2}\).
+	These inequalities are standard perturbation bounds for matrix functions on the
+	positive definite cone. One route is to write the Fr\'echet derivative of the
+	square-root map through a Sylvester equation and then apply a mean-value bound
+	for matrix functions; see \cite[Chs.~3 and 6]{higham2008functions}. The inverse-square-root estimate then follows from the identity
+	\[
+		A^{-1/2} - \widehat A^{-1/2}
+		=
+		A^{-1/2}(\widehat A^{1/2} - A^{1/2})\widehat A^{-1/2},
+	\]
+	combined with the square-root perturbation bound. The important qualitative
+	point is the scaling: the inverse square root is more sensitive near small
+	eigenvalues, with amplification proportional to \(\alpha_0^{-3/2}\).
 \end{proof}
 
 \begin{theorem}[Perturbation of covariance transport]
@@ -272,7 +347,7 @@ The randomized and arithmetic contributions can then be separated as
 	\qquad
 	\eta_B \le \eta_{\mathrm{rand},B} + \eta_{\mathrm{fp},B}.
 \]
-For spectra with visible decay, the randomized term is governed by the tail beyond the chosen rank, up to oversampling constants \cite{halko2011finding,martinsson2020randnla}. The floating-point term, by contrast, is controlled by the precision used in the sketch products and by the accumulation length. The thesis question is precisely how these two error sources should be balanced against each other.
+For spectra with visible decay, the randomized term is governed by the tail beyond the chosen rank, up to oversampling constants from the range-finder bound above \cite{halko2011finding,martinsson2020randnla}. The floating-point term, by contrast, follows the sketch-product model above and is controlled by the working precision, the accumulation length, the scale of the latent data, and the norm of the sketching operator. The thesis question is precisely how these two error sources should be balanced against each other.
 
 \begin{corollary}[Perturbation of corrected future data]
 	Under the hypotheses of the theorem,
