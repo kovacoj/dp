@@ -1,0 +1,20 @@
+{
+  "latex-workshop.latex.autoBuild.run": "onSave",
+  "latex-workshop.latex.build.forceRecipeUsage": true,
+  "latex-workshop.latex.recipe.default": "first",
+  "latex-workshop.latex.recipes": [
+    {
+      "name": "docker thesis",
+      "tools": [
+        "docker thesis"
+      ]
+    }
+  ],
+  "latex-workshop.latex.tools": [
+    {
+      "name": "docker thesis",
+      "command": "${workspaceFolder}/bin/latex-build",
+      "args": []
+    }
+  ]
+}
