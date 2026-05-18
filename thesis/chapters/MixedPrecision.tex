@@ -146,7 +146,9 @@ and even finite-sample modelling choices already introduce tolerances below whic
 additional arithmetic accuracy may not be useful. In such settings, the purpose of
 precision selection is not to minimize rounding error at all costs. It is to choose
 an arithmetic regime in which rounding remains subordinate to the inexactness
-already accepted elsewhere in the method.
+already accepted elsewhere in the method. This viewpoint aligns with recent work
+on balancing multiple sources of inexactness rather than optimizing one numerical
+layer in isolation \cite{carson2026balancing,higham2022mixed}.
 
 This idea can be summarized schematically as
 \[

@@ -51,6 +51,129 @@ The later mixed-precision discussion therefore rests on a simple principle.
 Randomized approximation error and floating-point error should not be studied in
 isolation. A useful theory must account for both at the same time.
 
+\section{Singular Value Decomposition and Pseudoinverse}
+
+The basic structural tool for least-squares analysis is the thin singular value
+decomposition. If \(A \in \R^{n \times d}\) has rank \(r\), then
+\[
+	A = U_r \Sigma_r V_r^\top,
+\]
+where \(U_r \in \R^{n \times r}\) and \(V_r \in \R^{d \times r}\) have orthonormal
+columns and
+\[
+	\Sigma_r = \operatorname{diag}(\sigma_1,\dots,\sigma_r),
+	\qquad
+	\sigma_1 \ge \cdots \ge \sigma_r > 0,
+\]
+contains the nonzero singular values. This factorization separates the geometry of
+the range, the nullspace, and the spectral scales of the operator.
+
+If \(A\) has full column rank, the least-squares minimizer may be written as
+\[
+	x_\star = A^\dagger b,
+	\qquad
+	A^\dagger = (A^\top A)^{-1}A^\top = V_r \Sigma_r^{-1} U_r^\top,
+\]
+where \(A^\dagger\) is the Moore--Penrose pseudoinverse. This formula is useful for
+analysis because it makes explicit that the small singular values of \(A\) are the
+source of sensitivity: directions associated with \(\sigma_j \ll 1\) are amplified by
+\(\sigma_j^{-1}\).
+
+The operator norm of \(A\) is
+\[
+	\|A\|_2 = \sigma_1,
+\]
+and for a full-column-rank matrix the Euclidean condition number is
+\[
+	\kappa_2(A) = \frac{\sigma_1}{\sigma_r}.
+\]
+This quantity measures how strongly data perturbations can be amplified by the
+least-squares solve and reappears later in the analysis of sketched systems.
+
+\section{Normal Equations, QR, and SVD}
+
+The least-squares problem admits several algebraic formulations, but they do not
+behave equally well numerically. The normal equations
+\[
+	A^\top A x = A^\top b
+\]
+are attractive because they reduce the problem to a square system. Their drawback
+is that they square the spectrum:
+\[
+	\sigma_j(A^\top A) = \sigma_j(A)^2,
+	\qquad
+	\kappa_2(A^\top A) = \kappa_2(A)^2.
+\]
+Thus a moderately ill-conditioned least-squares problem can become a severely
+ill-conditioned linear system when written in this form.
+
+By contrast, if \(A = QR\) is a thin QR factorization with \(Q\) having orthonormal
+columns and \(R \in \R^{d \times d}\) upper triangular, then the least-squares problem
+reduces to
+\[
+	\min_x \|Rx - Q^\top b\|_2,
+\]
+or equivalently to the triangular solve
+\[
+	Rx = Q^\top b
+\]
+in the full-column-rank case. QR avoids the explicit formation of \(A^\top A\) and is
+therefore the standard stable dense formulation.
+
+The SVD is more expensive than QR but more informative. It reveals rank
+deficiency directly, yields the pseudoinverse explicitly, and makes clear how
+solution sensitivity depends on the singular spectrum. In the present thesis, QR is
+the practical dense baseline, while the SVD is the conceptual reference that makes
+the conditioning questions transparent \cite{bjorck1996leastsquares}.
+
+\section{Least-Squares Perturbation Viewpoint}
+
+The numerical sensitivity of least squares depends on more than the matrix norm
+alone. Let \(x_\star\) solve
+\[
+	\min_x \|Ax-b\|_2,
+\]
+and write \(r_\star = b - Ax_\star\) for the optimal residual. Classical perturbation
+theory shows that under small perturbations \(\Delta A\) and \(\Delta b\), the relative
+change in the minimizer is controlled by the condition number together with a term
+that reflects the size of the residual. Schematically,
+\[
+	\frac{\|\Delta x_\star\|_2}{\|x_\star\|_2}
+	\lesssim
+	\kappa_2(A)
+	\left(
+	\frac{\|\Delta A\|_2}{\|A\|_2}
+	+
+	\frac{\|\Delta b\|_2}{\|b\|_2}
+	\right)
+	+
+	\kappa_2(A)^2
+	\frac{\|r_\star\|_2}{\|A\|_2\,\|x_\star\|_2}
+	\frac{\|\Delta A\|_2}{\|A\|_2},
+\]
+with more precise constants depending on the chosen formulation
+\cite[Ch.~1]{bjorck1996leastsquares}. The important qualitative message is that
+solution sensitivity is mild when the residual is small and \(A\) is well
+conditioned, but can be much worse in inconsistent or ill-conditioned problems.
+
+This observation explains why residual bounds and solution-error bounds should be
+kept conceptually distinct. A method may preserve the least-squares objective
+accurately while still producing a noticeably perturbed minimizer if the problem is
+geometrically sensitive. That distinction becomes central later when sketching and
+floating-point perturbations are analyzed together.
+
+\section{Floating-Point Recap for Least Squares}
+
+The mixed-precision chapter develops the full floating-point model later, but the
+least-squares background already needs one simple principle. Forming the reduced
+operator, the normal matrix, or the orthogonal factorization in finite precision does
+not solve the exact problem posed by \(A\) and \(b\); it solves a nearby problem.
+The size of this nearby perturbation depends on the working precision, the problem
+dimensions, and the stability of the chosen factorization. That is why the choice
+between normal equations, QR, SVD, and later randomized surrogates is not only a
+question of flop counts but also of how perturbations are amplified through the
+conditioning of the underlying operator \cite{higham2022mixed}.
+
 \section{Symmetric Positive Definite Operators}
 
 The covariance-transport part of the thesis is built from symmetric positive
