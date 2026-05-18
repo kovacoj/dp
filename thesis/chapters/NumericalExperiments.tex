@@ -249,6 +249,26 @@ the working hypothesis, the matrix or data model, the parameters being swept, an
 the diagnostics used to decide success or failure. That structure keeps the
 experimental chapter tied to the theorem statements rather than to ad hoc plotting.
 
+The repository now contains a first concrete realization of this program in
+\texttt{experiments/benchmark\_randmbc.R}. The current benchmark is still synthetic,
+but it already compares three relevant levels: the deterministic full
+covariance-transport baseline, selected reference methods from the vendored
+\texttt{MBC} package, and the current randomized \texttt{randMBC} backend under
+several rank, oversampling, and precision choices. The present result is not yet a
+speedup story. On the current synthetic data, the deterministic full baseline and
+the MBC references remain much more accurate in correlation and future-sample
+error than the low-rank randomized variants. This is useful evidence rather than a
+setback. It indicates that the dominant limitation is still the approximation regime
+itself, not yet the arithmetic regime.
+
+This interpretation also sharpens the mixed-precision question. In the current
+benchmark, single and double precision in the randomized path are often very close
+to one another, while both remain far from the deterministic baseline. That is a
+sign that truncation and transport perturbation are still larger than the precision
+effect one is trying to detect. For the later experimental chapter, this means that
+precision sweeps should be read only after the rank and regularization regime has
+been pushed into a range where randomized approximation is already credible.
+
 \section{Application-Facing Diagnostics}
 
 Once the covariance-transport experiments are connected to a climate-shaped data
