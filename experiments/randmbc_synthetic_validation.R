@@ -4,6 +4,7 @@ parse_args <- function(args) {
     out <- list(
         csv = file.path("results", "randmbc_synthetic_validation.csv"),
         rds = file.path("results", "randmbc_synthetic_validation.rds"),
+        summary_csv = file.path("results", "randmbc_synthetic_validation_summary.csv"),
         cov_plot = file.path("figures", "randmbc_cov_error_vs_rank.pdf"),
         transport_plot = file.path("figures", "randmbc_transport_error_vs_rank.pdf")
     )
@@ -24,6 +25,8 @@ parse_args <- function(args) {
             out$csv <- value
         } else if (key == "--rds") {
             out$rds <- value
+        } else if (key == "--summary-csv") {
+            out$summary_csv <- value
         } else if (key == "--cov-plot") {
             out$cov_plot <- value
         } else if (key == "--transport-plot") {
@@ -59,6 +62,18 @@ decaying_spectrum <- function(p, strength = 1.2, floor = 0.08) {
     floor + (seq_len(p) + 1)^(-strength)
 }
 
+exponential_spectrum <- function(p, alpha = 10, floor = 0.02) {
+    floor + exp(-seq_len(p) / alpha)
+}
+
+flat_spectrum <- function(p, level = 0.35) {
+    rep(level, p)
+}
+
+low_rank_noise_spectrum <- function(p, rank_signal = 8L, signal = 1, noise = 0.03) {
+    c(rep(signal, rank_signal), rep(noise, max(0L, p - rank_signal)))
+}
+
 block_mixer <- function(p, block_size = 4L, coupling = 0.22) {
     mixer <- diag(p)
     block_ids <- ((seq_len(p) - 1L) %/% block_size) + 1L
@@ -74,11 +89,35 @@ block_mixer <- function(p, block_size = 4L, coupling = 0.22) {
     qr.Q(qr(mixer + 0.03 * matrix(stats::rnorm(p * p), nrow = p, ncol = p)))
 }
 
-simulate_latent_triplet <- function(n = 256L, n_future = 128L, p = 64L, seed = 1L) {
+spectral_pair <- function(p, spectrum_case) {
+    switch(
+        spectrum_case,
+        exp_decay = list(
+            x = exponential_spectrum(p, alpha = 8, floor = 0.03),
+            y = exponential_spectrum(p, alpha = 11, floor = 0.04)
+        ),
+        poly_decay = list(
+            x = decaying_spectrum(p, strength = 1.15, floor = 0.05),
+            y = decaying_spectrum(p, strength = 1.35, floor = 0.07)
+        ),
+        flat = list(
+            x = flat_spectrum(p, level = 0.35),
+            y = flat_spectrum(p, level = 0.45)
+        ),
+        low_rank_noise = list(
+            x = low_rank_noise_spectrum(p, rank_signal = 6L, signal = 1.2, noise = 0.03),
+            y = low_rank_noise_spectrum(p, rank_signal = 8L, signal = 1.0, noise = 0.05)
+        ),
+        stop(sprintf("Unknown spectrum_case: %s", spectrum_case))
+    )
+}
+
+simulate_latent_triplet <- function(n = 256L, n_future = 128L, p = 64L, seed = 1L, spectrum_case = "poly_decay") {
     set.seed(seed)
 
-    spectrum_x <- decaying_spectrum(p, strength = 1.15, floor = 0.05)
-    spectrum_y <- decaying_spectrum(p, strength = 1.35, floor = 0.07)
+    spectra <- spectral_pair(p, spectrum_case)
+    spectrum_x <- spectra$x
+    spectrum_y <- spectra$y
     q_x <- block_mixer(p, coupling = 0.20)
     q_y <- block_mixer(p, coupling = 0.28)
 
@@ -96,7 +135,29 @@ simulate_latent_triplet <- function(n = 256L, n_future = 128L, p = 64L, seed = 1
     )
 }
 
-full_transport_row <- function(latent, seed, lambda) {
+build_cov_fit_from_basis <- function(Z, q, lambda, sketch, mult_prec, orth_prec, sample_y) {
+    cov_q <- covariance_action(Z, q)
+    b <- crossprod(q, cov_q)
+    cov_approx <- q %*% b %*% t(q)
+    cov_regularized <- cov_approx + diag(lambda, ncol(Z))
+    reg_eigvals <- eigen(symmetrize(cov_regularized), symmetric = TRUE, only.values = TRUE)$values
+
+    list(
+        Q = q,
+        B = b,
+        covariance_raw = cov_approx,
+        covariance = cov_regularized,
+        lambda = lambda,
+        rank = ncol(q),
+        sketch = sketch,
+        precision = list(mult = mult_prec, orth = orth_prec),
+        residual_norm_est = sampled_range_residual(sample_y, q),
+        lambda_min_reg = min(reg_eigvals),
+        condition_est = kappa(cov_regularized)
+    )
+}
+
+full_transport_row <- function(latent, seed, lambda, spectrum_case) {
     source_cov <- covariance_action(latent$Z_X, diag(ncol(latent$Z_X)))
     target_cov <- covariance_action(latent$Z_Y, diag(ncol(latent$Z_Y)))
     start <- proc.time()[[3L]]
@@ -113,6 +174,8 @@ full_transport_row <- function(latent, seed, lambda) {
         row = data.frame(
             method = "full_cov_transport",
             backend = "baseline",
+            basis_mode = "full",
+            spectrum_case = spectrum_case,
             rank = ncol(latent$Z_X),
             oversampling = 0L,
             lambda = lambda,
@@ -146,27 +209,46 @@ full_transport_row <- function(latent, seed, lambda) {
     )
 }
 
-randomized_transport_row <- function(latent, baseline, seed, rank, oversampling, lambda, precision) {
+randomized_transport_row <- function(latent, baseline, seed, rank, oversampling, lambda, precision, spectrum_case, basis_mode = c("independent", "joint")) {
+    basis_mode <- match.arg(basis_mode)
     start <- proc.time()[[3L]]
 
-    source_fit <- rand_cov_approx(
-        latent$Z_X,
-        rank = rank,
-        oversampling = oversampling,
-        sketch = "gaussian",
-        mult_prec = precision,
-        orth_prec = "double",
-        lambda = lambda
-    )
-    target_fit <- rand_cov_approx(
-        latent$Z_Y,
-        rank = rank,
-        oversampling = oversampling,
-        sketch = "gaussian",
-        mult_prec = precision,
-        orth_prec = "double",
-        lambda = lambda
-    )
+    if (basis_mode == "independent") {
+        source_fit <- rand_cov_approx(
+            latent$Z_X,
+            rank = rank,
+            oversampling = oversampling,
+            sketch = "gaussian",
+            mult_prec = precision,
+            orth_prec = "double",
+            lambda = lambda
+        )
+        target_fit <- rand_cov_approx(
+            latent$Z_Y,
+            rank = rank,
+            oversampling = oversampling,
+            sketch = "gaussian",
+            mult_prec = precision,
+            orth_prec = "double",
+            lambda = lambda
+        )
+    } else {
+        p <- ncol(latent$Z_X)
+        ell <- min(p, as.integer(rank + oversampling))
+        rank_used <- min(as.integer(rank), ell)
+        omega <- draw_sketch_matrix(p, ell, "gaussian")
+        omega_low <- fl_round(omega, precision)
+        z_x_low <- fl_round(latent$Z_X, precision)
+        z_y_low <- fl_round(latent$Z_Y, precision)
+        y_x <- fl_round(covariance_action(z_x_low, omega_low), precision)
+        y_y <- fl_round(covariance_action(z_y_low, omega_low), precision)
+        y_joint <- cbind(y_x, y_y)
+        y_for_qr <- fl_round(y_joint, "double")
+        q_full <- qr.Q(qr(y_for_qr))
+        q <- q_full[, seq_len(rank_used), drop = FALSE]
+        source_fit <- build_cov_fit_from_basis(latent$Z_X, q, lambda, "gaussian", precision, "double", y_x)
+        target_fit <- build_cov_fit_from_basis(latent$Z_Y, q, lambda, "gaussian", precision, "double", y_y)
+    }
     transport_fit <- cov_transport(source_fit$covariance, target_fit$covariance, lambda = 0)
     future_hat <- latent$Z_f %*% transport_fit$transport
     runtime <- proc.time()[[3L]] - start
@@ -177,6 +259,8 @@ randomized_transport_row <- function(latent, baseline, seed, rank, oversampling,
     data.frame(
         method = "randomized_cov_transport",
         backend = "randMBC",
+        basis_mode = basis_mode,
+        spectrum_case = spectrum_case,
         rank = rank,
         oversampling = oversampling,
         lambda = lambda,
@@ -205,10 +289,12 @@ randomized_transport_row <- function(latent, baseline, seed, rank, oversampling,
     )
 }
 
-failure_row <- function(seed, n, p, rank, oversampling, lambda, precision, message) {
+failure_row <- function(seed, n, p, rank, oversampling, lambda, precision, spectrum_case, basis_mode, message) {
     data.frame(
         method = "randomized_cov_transport",
         backend = "randMBC",
+        basis_mode = basis_mode,
+        spectrum_case = spectrum_case,
         rank = rank,
         oversampling = oversampling,
         lambda = lambda,
@@ -245,12 +331,20 @@ plot_metric_by_rank <- function(results, metric, ylabel, output_path) {
 
     summary <- stats::aggregate(
         randomized[[metric]],
-        by = list(rank = randomized$rank, precision = randomized$precision, lambda = randomized$lambda),
+        by = list(
+            rank = randomized$rank,
+            precision = randomized$precision,
+            lambda = randomized$lambda,
+            spectrum_case = randomized$spectrum_case,
+            basis_mode = randomized$basis_mode
+        ),
         FUN = mean
     )
-    colnames(summary)[4L] <- metric
+    colnames(summary)[6L] <- metric
     lambdas <- sort(unique(summary$lambda))
+    spectrum_cases <- unique(summary$spectrum_case)
     colors <- c(double = "steelblue", single = "firebrick")
+    line_types <- c(independent = 1, joint = 2)
     pdf(output_path, width = 8, height = 3 * length(lambdas))
     op <- par(mfrow = c(length(lambdas), 1L), mar = c(4, 4, 3, 1))
     on.exit({
@@ -258,63 +352,85 @@ plot_metric_by_rank <- function(results, metric, ylabel, output_path) {
         dev.off()
     }, add = TRUE)
 
-    for (lam in lambdas) {
-        panel <- summary[summary$lambda == lam, , drop = FALSE]
-        y_vals <- panel[[metric]][is.finite(panel[[metric]]) & panel[[metric]] > 0]
-        y_lim <- if (length(y_vals) > 0L) range(y_vals) else c(1e-12, 1)
-        plot(NA,
-            xlim = range(panel$rank),
-            ylim = y_lim,
-            log = "y",
-            xlab = "rank",
-            ylab = ylabel,
-            main = paste0(ylabel, " vs rank (lambda = ", format(lam, scientific = TRUE), ")")
-        )
+    for (case in spectrum_cases) {
+        for (lam in lambdas) {
+            panel <- summary[summary$lambda == lam & summary$spectrum_case == case, , drop = FALSE]
+            y_vals <- panel[[metric]][is.finite(panel[[metric]]) & panel[[metric]] > 0]
+            y_lim <- if (length(y_vals) > 0L) range(y_vals) else c(1e-12, 1)
+            plot(NA,
+                xlim = range(panel$rank),
+                ylim = y_lim,
+                log = "y",
+                xlab = "rank",
+                ylab = ylabel,
+                main = paste0(case, ": ", ylabel, " vs rank (lambda = ", format(lam, scientific = TRUE), ")")
+            )
 
-        for (precision in c("double", "single")) {
-            curve <- panel[panel$precision == precision, , drop = FALSE]
-            if (nrow(curve) == 0L) {
-                next
+            for (basis_mode in c("independent", "joint")) {
+                for (precision in c("double", "single")) {
+                    curve <- panel[panel$precision == precision & panel$basis_mode == basis_mode, , drop = FALSE]
+                    if (nrow(curve) == 0L) {
+                        next
+                    }
+                    curve <- curve[order(curve$rank), , drop = FALSE]
+                    lines(curve$rank, curve[[metric]], type = "b", lwd = 2, pch = 16, lty = line_types[[basis_mode]], col = colors[[precision]])
+                }
             }
-            curve <- curve[order(curve$rank), , drop = FALSE]
-            lines(curve$rank, curve[[metric]], type = "b", lwd = 2, pch = 16, col = colors[[precision]])
+            legend(
+                "topright",
+                legend = c("double + independent", "single + independent", "double + joint", "single + joint"),
+                col = c(colors[["double"]], colors[["single"]], colors[["double"]], colors[["single"]]),
+                lty = c(1, 1, 2, 2),
+                pch = 16,
+                bty = "n"
+            )
         }
-        legend("topright", legend = c("double", "single"), col = colors[c("double", "single")], lty = 1, pch = 16, bty = "n")
     }
 }
 
 write_outputs <- function(results, cfg) {
     dir.create(dirname(cfg$csv), recursive = TRUE, showWarnings = FALSE)
     dir.create(dirname(cfg$rds), recursive = TRUE, showWarnings = FALSE)
+    dir.create(dirname(cfg$summary_csv), recursive = TRUE, showWarnings = FALSE)
     dir.create(dirname(cfg$cov_plot), recursive = TRUE, showWarnings = FALSE)
     dir.create(dirname(cfg$transport_plot), recursive = TRUE, showWarnings = FALSE)
 
+    randomized <- results[results$method == "randomized_cov_transport" & results$status == "ok", , drop = FALSE]
+    summary <- stats::aggregate(
+        randomized[c("cov_error", "transport_error", "future_error", "pearson_error", "spearman_error", "runtime_sec")],
+        by = randomized[c("spectrum_case", "basis_mode", "rank", "oversampling", "lambda", "precision")],
+        FUN = mean
+    )
+
     utils::write.csv(results, cfg$csv, row.names = FALSE)
     saveRDS(results, cfg$rds)
+    utils::write.csv(summary, cfg$summary_csv, row.names = FALSE)
     plot_metric_by_rank(results, "cov_error", "covariance error", cfg$cov_plot)
     plot_metric_by_rank(results, "transport_error", "transport error", cfg$transport_plot)
 }
 
 grid <- expand.grid(
+    spectrum_case = c("exp_decay", "poly_decay", "flat", "low_rank_noise"),
     seed = c(1L, 2L, 3L),
     rank = c(5L, 10L, 20L, 40L),
-    oversampling = c(5L),
+    oversampling = c(5L, 10L),
     lambda = c(1e-6, 1e-4, 1e-2),
     precision = c("double", "single"),
+    basis_mode = c("independent", "joint"),
     stringsAsFactors = FALSE
 )
 
-results <- vector("list", length = nrow(grid) + length(unique(interaction(grid$seed, grid$lambda))))
+results <- vector("list", length = nrow(grid) + length(unique(interaction(grid$spectrum_case, grid$seed, grid$lambda))))
 idx <- 1L
 baseline_cache <- new.env(parent = emptyenv())
 
 for (i in seq_len(nrow(grid))) {
     params <- grid[i, ]
-    key <- paste(params$seed, params$lambda, sep = "::")
+    key <- paste(params$spectrum_case, params$seed, params$lambda, sep = "::")
 
     if (!exists(key, envir = baseline_cache, inherits = FALSE)) {
-        latent <- simulate_latent_triplet(seed = params$seed)
-        baseline <- full_transport_row(latent, seed = params$seed, lambda = params$lambda)
+        latent <- simulate_latent_triplet(seed = params$seed, spectrum_case = params$spectrum_case)
+        baseline <- full_transport_row(latent, seed = params$seed, lambda = params$lambda, spectrum_case = params$spectrum_case)
         assign(key, list(latent = latent, baseline = baseline), envir = baseline_cache)
         results[[idx]] <- baseline$row
         idx <- idx + 1L
@@ -329,7 +445,9 @@ for (i in seq_len(nrow(grid))) {
             rank = params$rank,
             oversampling = params$oversampling,
             lambda = params$lambda,
-            precision = params$precision
+            precision = params$precision,
+            spectrum_case = params$spectrum_case,
+            basis_mode = params$basis_mode
         ),
         error = function(err) {
             failure_row(
@@ -340,6 +458,8 @@ for (i in seq_len(nrow(grid))) {
                 oversampling = params$oversampling,
                 lambda = params$lambda,
                 precision = params$precision,
+                spectrum_case = params$spectrum_case,
+                basis_mode = params$basis_mode,
                 message = conditionMessage(err)
             )
         }

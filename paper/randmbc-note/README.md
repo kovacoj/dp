@@ -14,6 +14,7 @@ Related code and results:
 - `experiments/randmbc_synthetic_validation.R`
 - `results/randmbc_synthetic_validation.csv`
 - `results/randmbc_synthetic_validation.rds`
+- `results/randmbc_synthetic_validation_summary.csv`
 - `figures/randmbc_cov_error_vs_rank.pdf`
 - `figures/randmbc_transport_error_vs_rank.pdf`
 - `experiments/benchmark_randmbc.R`
