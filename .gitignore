@@ -23,3 +23,15 @@ containers/.env
 
 # Windows metadata sidecars
 *:Zone.Identifier
+
+# Local paper build artifacts
+paper/randmbc-note/indent.log
+paper/randmbc-note/*.aux
+paper/randmbc-note/*.bcf
+paper/randmbc-note/*.bbl
+paper/randmbc-note/*.blg
+paper/randmbc-note/*.fdb_latexmk
+paper/randmbc-note/*.fls
+paper/randmbc-note/*.log
+paper/randmbc-note/*.out
+paper/randmbc-note/*.run.xml

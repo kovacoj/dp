@@ -47,7 +47,7 @@ Project 2: Randomized Covariance Transport for Multivariate Bias Correction}
 \vspace{1em}
 
 \begin{abstract}
-	This note studies a narrow climate-facing problem in randomized numerical linear algebra: whether a regularized covariance-transport layer can serve as a computationally cheaper dependence-correction step inside a simplified multivariate bias-correction workflow. The focus is not on the full climate post-processing pipeline, but on one operator-level object that is mathematically analyzable and implementation-friendly. After marginal adjustment and a latent rank-normal transform, dependence correction is represented by a regularized covariance transport map. The expensive covariance operators are then approximated by randomized low-rank surrogates, with optional reduced precision in the large sketch products. The resulting prototype is implemented in the local R package \texttt{randMBC} and compared against a deterministic full covariance-transport baseline and selected reference methods from the vendored \texttt{MBC} package. On the current synthetic benchmark, the deterministic baseline and the reference MBC-style methods remain substantially more accurate than the current low-rank randomized prototype. Thus the present conclusion is not that the method is already superior, but that it isolates a clean operator-level project whose numerical advantages and limitations can be measured honestly.
+	This note studies a narrow climate-facing problem in randomized numerical linear algebra: whether a regularized covariance-transport layer can serve as a computationally cheaper dependence-correction step inside a simplified multivariate bias-correction workflow. The focus is not on the full climate post-processing pipeline, but on one operator-level object that is mathematically analyzable and implementation-friendly. After marginal adjustment and a latent rank-normal transform, dependence correction is represented by a regularized covariance transport map. The expensive covariance operators are then approximated by randomized low-rank surrogates, with optional reduced precision in the large sketch products. The resulting prototype is implemented in the local R package \texttt{randMBC} and evaluated first on a focused synthetic latent-data benchmark that compares full covariance transport against randomized covariance transport in double and simulated single precision. On this benchmark, covariance approximation error decays with rank, larger regularization sharply reduces transport amplification, and the simulated single-precision runs remain close to double precision in the current truncation-dominated regime. At the same time, the downstream dependence errors remain too large for the present randomized prototype to be considered application-ready. Thus the current conclusion is not that the method is already superior, but that it isolates a clean operator-level project whose numerical advantages and limitations can be measured honestly.
 \end{abstract}
 
 \section{Introduction and Motivation}
@@ -180,53 +180,53 @@ where $E_{\mathrm{rand}}$ arises from truncation to the sampled range and $E_{\m
 
 \section{Implementation and Controlled Experiments}
 
-The local R package \texttt{randMBC} implements precisely the reduced workflow described above: QDM-style marginal adjustment, latent Gaussianization, randomized covariance approximation, regularized covariance transport, and rank restoration. The benchmark script \texttt{experiments/benchmark\_randmbc.R} compares three families of methods on synthetic climate-shaped data:
+The local R package \texttt{randMBC} implements precisely the reduced workflow described above: latent Gaussianization, randomized covariance approximation, regularized covariance transport, and the associated diagnostics. The first focused validation step is the script
+\texttt{experiments/randmbc\_synthetic\_validation.R}, which compares two
+families of methods on controlled latent data:
 \begin{enumerate}
 	\item a deterministic full covariance-transport baseline,
-	\item selected reference methods from the vendored \texttt{src/MBC} package, namely MBCp and MBCr,
-	\item the current randomized \texttt{randMBC} backend at several ranks, oversampling levels, and simulated precisions.
+	\item randomized covariance transport at several ranks, one fixed oversampling level, three regularization levels, and two arithmetic regimes (double and simulated single precision).
 \end{enumerate}
 
-The synthetic data are intentionally simple. They combine low-dimensional seasonal latent structure, additive noise, mild cross-variable mixing, and one precipitation-like nonnegative variable treated with ratio-style marginal correction. This is not a realistic climate workflow. Its purpose is to create a controlled environment in which covariance approximation error, transport error, and application-facing dependence diagnostics can be interpreted without confounding effects from a larger data pipeline.
+The synthetic data are intentionally operator-centered rather than climate-realistic. They are generated directly in latent space with decaying covariance spectra, block dependence, and separate source, target, and future samples. This design avoids confounding the first validation step with the full MBC pipeline and makes the operator-level diagnostics directly interpretable.
 
-The benchmark records runtime, memory footprint of the corrected output object, Pearson and Spearman dependence error, marginal quantile error, an energy-score-style discrepancy, covariance approximation errors for the source and target latent operators, transport-map error relative to the full baseline, and error in the corrected future sample. In this sense it already implements the minimal experimental contract that a later thesis chapter will need.
+Each run records
+\[
+	\|C - \widehat C\|_2,
+	\qquad
+	\|T_\lambda - \widehat T_\lambda\|_2,
+	\qquad
+	\|Z_fT_\lambda - Z_f\widehat T_\lambda\|_F,
+\]
+together with the condition number and minimum eigenvalue of the regularized covariance, the runtime, the rank, the oversampling level, the regularization parameter, the simulated precision, and simple dependence diagnostics on the corrected future sample. The benchmark writes machine-readable outputs under \texttt{results/} and figures under \texttt{figures/}, so it already matches the reproducibility requirements that the later thesis chapter will need.
 
 \begin{figure}[t]
 	\centering
-	\includegraphics[page=1,width=0.78\textwidth]{../../experiments/output/randmbc-benchmark-plots.pdf}
-	\caption{Pearson correlation error versus runtime on the current synthetic benchmark. The deterministic full covariance-transport baseline and the selected \texttt{src/MBC} references lie in the low-error regime, while the present low-rank randomized variants remain substantially less accurate.}
-	\label{fig:randmbc-pearson-runtime}
+	\includegraphics[width=0.9\textwidth]{../../figures/randmbc_cov_error_vs_rank.pdf}
+	\caption{Covariance approximation error versus rank on the focused synthetic latent-data validation. The error decreases consistently as the target rank grows, and simulated single precision remains close to double precision in this truncation-dominated regime.}
+	\label{fig:randmbc-cov-error}
 \end{figure}
 
-\begin{table}[t]
+\begin{figure}[t]
 	\centering
-	\small
-	\begin{tabular}{lrrrr}
-		\toprule
-		method                        & runtime (s) & Pearson err. & Spearman err. & future err. \\
-		\midrule
-		full covariance transport     & 0.0710      & 0.0102       & 0.0123        & 0.0000      \\
-		MBCp reference                & 0.4645      & 0.0103       & 0.0253        & 0.0245      \\
-		MBCr reference                & 0.0735      & 0.0446       & 0.0470        & 0.0399      \\
-		randMBC, $r=2$, $q=0$, single & 0.0100      & 0.6911       & 0.6801        & 0.8870      \\
-		randMBC, $r=3$, $q=0$, double & 0.0135      & 1.6427       & 1.6674        & 1.0363      \\
-		\bottomrule
-	\end{tabular}
-	\caption{Representative rows from the current synthetic benchmark. The deterministic full covariance-transport baseline and the selected MBC references remain much closer to the target dependence structure than the current low-rank randomized prototype.}
-	\label{tab:randmbc-current-benchmark}
-\end{table}
+	\includegraphics[width=0.9\textwidth]{../../figures/randmbc_transport_error_vs_rank.pdf}
+	\caption{Transport-map error versus rank. Regularization changes the picture decisively: with \(\lambda = 10^{-6}\), the inverse-square-root amplification produces errors of order \(10^2\) to \(10^3\), while with \(\lambda = 10^{-2}\) the transport error drops to order one and decreases further with rank.}
+	\label{fig:randmbc-transport-error}
+\end{figure}
 
-The main current finding is negative but informative. On this synthetic test, the deterministic full covariance-transport baseline achieves low dependence error and serves as the operator-level reference. MBCp performs comparably in Pearson correlation error, though at noticeably higher runtime in the present implementation. MBCr is somewhat weaker on this particular synthetic example, but still substantially better than the current low-rank randomized variants. By contrast, the randomized prototype at ranks $2$ and $3$ shows large covariance and transport perturbations and correspondingly poor downstream dependence correction. In the present regime, the low-rank approximation error is not yet small enough for the randomized method to compete with the full baseline.
+The first message of the focused validation is positive: the randomized covariance approximation behaves in the expected direction. Averaged over the seeds, the covariance error decreases from about \(0.40\) at rank \(5\) to about \(0.13\) at rank \(40\), with double and simulated single precision remaining close throughout. This is exactly the regime in which one should expect truncation error to dominate arithmetic error.
 
-The precision comparison should also be read carefully. In some parameter settings, the current single-precision simulation performs slightly better than the corresponding double-precision randomized run, while in others the two are almost indistinguishable. This should not be overinterpreted as a fundamental single-versus-double phenomenon. Rather, it indicates that on the current benchmark the approximation regime itself is still dominating the behavior. The more decisive gap is between the deterministic full transport and the current truncated randomized surrogate.
+The second message is that regularization is not a cosmetic parameter. At rank \(40\), the mean transport error remains in the hundreds for \(\lambda = 10^{-6}\), drops to the thirties for \(\lambda = 10^{-4}\), and falls to roughly \(2.3\) for \(\lambda = 10^{-2}\). The regularized minimum eigenvalue makes the same point from the opposite direction: once the spectral gap created by \(\lambda\) is substantial enough, the inverse-square-root stage no longer amplifies covariance perturbations catastrophically.
+
+The third message is still cautionary. Even in the best current regime, the downstream Pearson and Spearman dependence errors remain far from negligible. The present randomized prototype is therefore not yet application-ready. What the benchmark does establish is a disciplined numerical path: first drive the covariance and transport diagnostics into a favorable regime, then revisit climate-facing dependence correction once the operator-level approximation is genuinely under control.
 
 \section{Conclusion and Next Steps}
 
-The present note does not support the claim that randomized covariance transport is already a superior dependence-correction layer for multivariate bias correction. On the current controlled benchmark, the answer to the practical question ``did \texttt{randMBC} help?'' is: not yet. The full covariance-transport baseline and the selected MBC references remain markedly more accurate than the current low-rank randomized prototype.
+The present note does not support the claim that randomized covariance transport is already a superior dependence-correction layer for multivariate bias correction. On the current controlled benchmark, the answer to the practical question ``did \texttt{randMBC} help?'' is: not yet. The deterministic full covariance-transport baseline remains markedly more accurate than the current low-rank randomized prototype.
 
 That is nevertheless a useful result. It isolates where the problem lies. The current prototype is not failing because the covariance-transport viewpoint itself is incoherent. The deterministic full baseline performs well, which means the operator-level construction is numerically sensible in this synthetic setting. The difficulty lies in the low-rank truncation and in the choice of regimes where randomized compression can actually approximate the relevant latent covariance operators well enough to preserve the transport map.
 
-This gives a clear next experimental program. First, the benchmark should be repeated on spectra with controlled decay, because randomized low-rank methods are only plausible when such decay exists. Second, the rank and oversampling sweeps should be widened so that one can observe whether transport error enters a genuinely favorable regime. Third, the precision study should be revisited only after the randomized approximation error has been driven low enough that arithmetic effects are no longer hidden beneath truncation error. Finally, once the operator-level story is numerically credible, the same method can be reinserted into a more realistic climate-facing workflow.
+This gives a clear next experimental program. First, the rank and oversampling sweeps should be widened so that one can test whether the covariance approximation enters a genuinely low-error regime for larger latent dimensions. Second, the regularization study should be sharpened, since the present benchmark shows that transport stability is dominated by the regularized spectral gap. Third, the precision comparison should be revisited only after the randomized approximation error has been driven low enough that arithmetic effects are no longer hidden beneath truncation error. Finally, once the operator-level story is numerically credible, the same method can be reinserted into a more realistic climate-facing workflow.
 
 In this sense, the note already serves its intended role. It defines one narrow project, formulates the correct operator-level diagnostics, connects the method to randomized and mixed-precision numerical linear algebra, and reaches an honest preliminary conclusion. That is enough for a supervisor-facing short paper and, later, it can be absorbed almost directly into the thesis chapter sequence on randomized covariance transport, implementation, and experiments.
 
