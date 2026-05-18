@@ -222,13 +222,42 @@ longer remains hidden beneath the approximation error. The decisive numerical
 question is therefore not merely whether lower precision is faster, but where the
 curves begin to separate and how that separation depends on regularization.
 
+The covariance-transport experiments should therefore be organized as explicit
+tests rather than only as exploratory plots. A concrete first campaign is the
+following.
+\begin{enumerate}
+	\item \textbf{Covariance approximation versus rank.} Fix the precision and vary the
+	      target rank \(r\) to test how quickly \(\|C - \widehat C\|_2\) decays.
+	\item \textbf{Transport error versus regularization.} Fix the rank and vary
+	      \(\lambda\) to test how strongly the inverse-square-root conditioning affects
+	      \(\|T_\lambda - \widehat T_\lambda\|_2\).
+	\item \textbf{Precision threshold sweep.} Compare double, single, and lower
+	      precision in the sketch products to identify the point at which
+	      floating-point error ceases to be dominated by randomized truncation.
+	\item \textbf{Balancing randomized and arithmetic error.} Increase the rank until
+	      the approximation error becomes small enough that arithmetic error is no
+	      longer hidden, thereby exposing the regime predicted by the balancing
+	      principle.
+	\item \textbf{Climate-shaped synthetic data.} Replace the purely iid Gaussian model
+	      by matrices with decaying spectra and block dependence so that the
+	      covariance-transport diagnostics are tested in a structure closer to the
+	      intended application.
+\end{enumerate}
+
+Each of these experiments should be described in the final thesis by four items:
+the working hypothesis, the matrix or data model, the parameters being swept, and
+the diagnostics used to decide success or failure. That structure keeps the
+experimental chapter tied to the theorem statements rather than to ad hoc plotting.
+
 \section{Application-Facing Diagnostics}
 
 Once the covariance-transport experiments are connected to a climate-shaped data
 pipeline, the numerical diagnostics should be accompanied by statistical ones. At a
 minimum, one should compare the corrected output against the target dependence
 structure through marginal quantile diagnostics, correlation diagnostics, and
-multivariate summaries of dependence error. The point is not to replace the
+multivariate summaries of dependence error. Useful quantities include Pearson and
+Spearman correlation error, spatial and temporal autocorrelation error, and an
+energy-score-style multivariate discrepancy. The point is not to replace the
 operator-norm viewpoint, but to relate it to the application metrics by which a
 post-processing method would ultimately be judged.
 

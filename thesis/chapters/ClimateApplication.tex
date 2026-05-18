@@ -63,6 +63,37 @@ way, the application chapter stays tied to multivariate climate post-processing
 without forcing the entire theory to become a direct analysis of a fully nonlinear
 bias-correction algorithm.
 
+\section{Workflow}
+
+At the method level, the climate-facing procedure should be described by explicit
+inputs and outputs. The input is a triple
+\[
+	X_h,\; X_f,\; Y_h,
+\]
+consisting of historical model data, future model data, and historical reference
+data. The output is a corrected future sample
+\[
+	X_f^{\mathrm{corr}}
+\]
+that inherits the target marginal behavior together with an adjusted dependence
+structure.
+
+The computational steps are then:
+\begin{enumerate}
+	\item apply QDM-type marginal correction to obtain \(\widetilde X_h\) and
+	      \(\widetilde X_f\),
+	\item transform the calibration and future samples to a latent rank-normal space,
+	\item estimate the calibration covariance operators,
+	\item approximate them by randomized low-rank sketches,
+	\item build the regularized transport map \(T_\lambda\),
+	\item apply the map to the future latent data,
+	\item restore the target marginals by rank rearrangement.
+\end{enumerate}
+
+This explicit workflow is useful because it makes clear which part of the method is
+meant to carry the numerical linear algebra: the covariance approximation and
+transport layer, not the entire post-processing pipeline at once.
+
 \section{Randomized Covariance Transport}
 
 The thesis does not propose a universal replacement for methods such as MBCn.
@@ -90,6 +121,13 @@ is the regularized transport map to lower precision, and how much regularization
 needed to keep the inverse square root in a benign regime? The second level is
 statistical: after the dependence correction is pushed back to the climate data,
 which marginal and multivariate features are preserved, improved, or degraded?
+
+The validation metrics should therefore also be split into two groups. On the
+numerical side, the natural quantities are covariance error, transport-map error,
+runtime, and memory use. On the statistical side, the natural quantities are
+marginal quantile error, Pearson and Spearman correlation error, spatial
+correlation error, temporal autocorrelation error, and a multivariate discrepancy
+measure such as the energy score.
 
 These questions are deliberately broader than raw runtime. Reduced memory use,
 stable lower-precision behavior, and a clearer map of failure regimes are all valid

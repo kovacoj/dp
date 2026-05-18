@@ -1,11 +1,13 @@
 \chapter{Mathematical Background} \label{ch:background}
 
 This chapter collects the mathematical material needed later for randomized
-least-squares methods. The main ingredients come from three directions:
-classical least-squares theory, random projections and subspace embeddings, and
-perturbation questions related to conditioning. Although all spaces in this thesis
-are finite-dimensional, it is often convenient to use the language of linear maps,
-ranges, and subspaces rather than only matrix coordinates.
+least-squares methods and for covariance-based dependence correction. The main
+ingredients come from four directions: classical least-squares theory, random
+projections and subspace embeddings, symmetric positive definite operators and
+their matrix functions, and perturbation questions related to conditioning.
+Although all spaces in this thesis are finite-dimensional, it is often convenient to
+use the language of linear maps, ranges, and subspaces rather than only matrix
+coordinates.
 
 For an overdetermined system \(A \in \R^{n \times d}\) with \(n \ge d\), the least-squares problem
 \[
@@ -48,3 +50,89 @@ conditioning is discussed in \Cref{prop:sketched_cond}.
 The later mixed-precision discussion therefore rests on a simple principle.
 Randomized approximation error and floating-point error should not be studied in
 isolation. A useful theory must account for both at the same time.
+
+\section{Symmetric Positive Definite Operators}
+
+The covariance-transport part of the thesis is built from symmetric positive
+semidefinite and positive definite matrices. A matrix \(A \in \R^{p \times p}\) is
+symmetric positive semidefinite if
+\[
+	x^\top A x \ge 0 \qquad \forall x \in \R^p,
+\]
+and symmetric positive definite if the inequality is strict for every nonzero
+\(x\). In the latter case, \(A\) is invertible and all of its eigenvalues are strictly
+positive. Since the matrices are symmetric, they admit an orthogonal spectral
+decomposition
+\[
+	A = Q \Lambda Q^\top,
+\]
+where \(Q\) is orthogonal and \(\Lambda\) is diagonal with real entries.
+
+Empirical covariance matrices provide the main examples later on. If
+\(Z \in \R^{n \times p}\) is a centered data matrix, then
+\[
+	C = \frac{1}{n} Z^\top Z
+\]
+is symmetric positive semidefinite. In high-dimensional settings it may be
+singular or nearly singular, which is why regularization by \(\lambda I\) is not an
+optional detail but a structural part of the method.
+
+\section{Matrix Square Roots and Regularization}
+
+If \(A\) is symmetric positive definite with spectral decomposition
+\(A = Q \Lambda Q^\top\), its matrix square root and inverse square root are defined
+by functional calculus as
+\[
+	A^{1/2} = Q \Lambda^{1/2} Q^\top,
+	\qquad
+	A^{-1/2} = Q \Lambda^{-1/2} Q^\top.
+\]
+These matrices are again symmetric positive definite, and they are the unique
+positive definite solutions of
+\[
+	A^{1/2}A^{1/2} = A,
+	\qquad
+	A^{-1/2} A A^{-1/2} = I.
+\]
+
+Regularization shifts the spectrum away from zero. If \(C\) is positive
+semidefinite and \(\lambda > 0\), then
+\[
+	C + \lambda I
+\]
+is positive definite, with eigenvalues \(\mu_i(C) + \lambda\). This shift provides a
+numerical safety margin for the inverse square root and controls how strongly
+small covariance eigenvalues are amplified.
+
+\section{Basic Perturbation Facts}
+
+The later covariance-transport analysis repeatedly uses simple spectral
+perturbation facts. The first is positivity under perturbation: if \(A\) is symmetric
+positive definite and \(E\) is symmetric, then
+\[
+	\lambda_{\min}(A+E) \ge \lambda_{\min}(A) - \|E\|_2.
+\]
+Consequently, if \(\|E\|_2 < \lambda_{\min}(A)\), the perturbed matrix remains
+positive definite. This is the basic condition that allows the square root and
+inverse square root of a computed approximation to remain well defined.
+
+The second fact is qualitative rather than exact: matrix square roots and inverse
+square roots inherit the conditioning of the underlying spectrum. Perturbations of
+\(A^{1/2}\) are controlled by the distance of the spectrum from zero, while
+perturbations of \(A^{-1/2}\) are more sensitive because the scalar map
+\(t \mapsto t^{-1/2}\) has derivative \(-\tfrac12 t^{-3/2}\). This is the analytic source
+of the regularization tradeoff in covariance transport. Increasing \(\lambda\)
+improves stability of the inverse square root, but it also changes the operator that
+is being transported.
+
+\section{Why This Background Matters}
+
+These spectral facts extend the least-squares viewpoint from compressed
+rectangular operators to self-adjoint covariance operators. In the least-squares
+chapters, the decisive question is whether sketching preserves the geometry of a
+range space well enough that the reduced problem remains faithful to the original
+one. In the covariance-transport chapter, the decisive question becomes whether a
+randomized and finite-precision approximation of the covariance operator remains
+accurate enough after it is processed by matrix square roots and inverse square
+roots. The mathematical language is therefore the same in spirit, but the operator
+calculus is richer.

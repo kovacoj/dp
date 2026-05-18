@@ -20,13 +20,23 @@ The first stage remains standard. Each marginal series is corrected by a univari
 \]
 so that the eventual output inherits the desired marginal behavior from the reference historical data together with modeled changes in quantiles \cite{cannon2015qdm}. What remains is the dependence correction.
 
-To express dependence in a form closer to linear algebra, it is convenient to pass to a latent Gaussianized space. For each column \(j\), let \(\widehat F_j\) denote the empirical distribution function of the corresponding marginally corrected calibration sample, and let \(\Phi\) denote the standard normal distribution function. We then define
+To express dependence in a form closer to linear algebra, it is convenient to pass to a latent Gaussianized space. The precise standardization map can be chosen in several closely related ways, but it should avoid empirical probabilities equal to \(0\) or \(1\), since \(\Phi^{-1}\) would then produce infinities. A convenient finite definition is obtained from plotting-position ranks. For each column \(j\), write
 \[
-	Z_X(:,j) = \Phi^{-1}\!\bigl(\widehat F_j(\widetilde X_h(:,j))\bigr),
+	u_{X,ij} = \frac{\operatorname{rank}(\widetilde X_h(i,j)) - \tfrac12}{n},
 	\qquad
-	Z_Y(:,j) = \Phi^{-1}\!\bigl(\widehat F_j(Y_h(:,j))\bigr),
+	u_{Y,ij} = \frac{\operatorname{rank}(Y_h(i,j)) - \tfrac12}{n},
 \]
-and similarly obtain \(Z_f\) from \(\widetilde X_f\). In this representation, marginal correction is separated from dependence correction: the marginals are handled before and after the latent transform, while the multivariate adjustment acts on the standardized latent variables.
+and similarly
+\[
+	u_{f,ij} = \frac{\operatorname{rank}(\widetilde X_f(i,j)) - \tfrac12}{m}
+\]
+for the future sample. We then define
+\[
+	Z_X(i,j) = \Phi^{-1}(u_{X,ij}),
+	\qquad
+	Z_Y(i,j) = \Phi^{-1}(u_{Y,ij}),
+\]
+and similarly obtain \(Z_f\) from \(u_f\). In this representation, marginal correction is separated from dependence correction: the marginals are handled before and after the latent transform, while the multivariate adjustment acts on the standardized latent variables.
 
 This reduction is not meant to claim that all relevant climate dependence is Gaussian. It is a modeling step that isolates a dependence operator that is computationally tractable and mathematically interpretable. In particular, it allows the dependence-correction stage to be expressed through covariance operators in a finite-dimensional inner-product space.
 
@@ -50,6 +60,23 @@ The corrected latent future data are then obtained as
 \[
 	Z_f^{\mathrm{corr}} = Z_f T_\lambda.
 \]
+
+\begin{remark}[Regularization bias]
+	For \(\lambda = 0\), the idealized transport map
+	\(T = C_X^{-1/2} C_Y^{1/2}\) satisfies
+	\[
+		T^\top C_X T = C_Y
+	\]
+	whenever the inverse square root is well defined. For \(\lambda > 0\), the
+	regularized map instead satisfies
+	\[
+		T_\lambda^\top (C_X + \lambda I) T_\lambda = C_Y + \lambda I,
+	\]
+	and therefore transports the regularized covariance exactly, not the original
+	unregularized covariance. Thus \(\lambda\) controls both numerical stability and
+	modelling bias.
+\end{remark}
+
 Finally, because a linear map in latent space will generally disturb the exact marginal distributions, the latent correction is used only to update ranks. For each variable, the values from the QDM-corrected future sample \(\widetilde X_f(:,j)\) are sorted and then rearranged according to the ranks of \(Z_f^{\mathrm{corr}}(:,j)\). The final output therefore combines
 \[
 	\text{marginals from QDM} \quad + \quad \text{dependence from covariance transport}.
@@ -146,13 +173,98 @@ If
 	\qquad
 	\|\Delta B\|_2 \le \eta_B,
 \]
-then one expects matrix-function perturbation estimates to lead to a bound of the form
-\[
-	\|T_\lambda - \widehat T_\lambda\|_2
-	\lesssim
-	K_\lambda(C_X,C_Y)(\eta_A + \eta_B),
-\]
-where the amplification factor \(K_\lambda\) deteriorates as \(\lambda_{\min}(C_X + \lambda I)\) or \(\lambda_{\min}(C_Y + \lambda I)\) approaches zero. This is the mathematical reason why regularization is not a secondary implementation detail in the present problem. It is part of the perturbation theory itself.
+the later perturbation analysis can be organized into a small chain of deterministic
+statements.
+
+\begin{proposition}[Positive definiteness under perturbation]
+	Let \(A = C_X + \lambda I\) and \(\widehat A = A + \Delta A\), where \(A\) and
+	\(\widehat A\) are symmetric. If \(\|\Delta A\|_2 < \lambda_{\min}(A)\), then
+	\(\widehat A\) remains symmetric positive definite and
+	\[
+		\lambda_{\min}(\widehat A) \ge \lambda_{\min}(A) - \|\Delta A\|_2.
+	\]
+	The same statement holds for \(B\) and \(\widehat B\).
+\end{proposition}
+
+\begin{proof}[Proof sketch]
+	For any unit vector \(x\),
+	\[
+		x^\top \widehat A x = x^\top A x + x^\top \Delta A x
+		\ge \lambda_{\min}(A) - \|\Delta A\|_2.
+	\]
+	Taking the infimum over \(\|x\|_2 = 1\) gives the bound.
+\end{proof}
+
+\begin{proposition}[Perturbation of regularized square roots]
+	Assume that \(A\), \(\widehat A\), \(B\), and \(\widehat B\) are symmetric positive
+	definite, and set
+	\[
+		\alpha_0 = \min\{\lambda_{\min}(A), \lambda_{\min}(\widehat A)\},
+		\qquad
+		\beta_0 = \min\{\lambda_{\min}(B), \lambda_{\min}(\widehat B)\}.
+	\]
+	Then
+	\[
+		\|A^{-1/2} - \widehat A^{-1/2}\|_2
+		\le
+		\frac{1}{2\alpha_0^{3/2}}\,\|\Delta A\|_2,
+	\]
+	and
+	\[
+		\|B^{1/2} - \widehat B^{1/2}\|_2
+		\le
+		\frac{1}{2\beta_0^{1/2}}\,\|\Delta B\|_2.
+	\]
+\end{proposition}
+
+\begin{proof}[Proof sketch]
+	These bounds express the scalar derivative behavior of
+	\(t \mapsto t^{-1/2}\) and \(t \mapsto t^{1/2}\) through spectral calculus. The
+	important qualitative point is the scaling: the inverse square root is more
+	sensitive near small eigenvalues, with amplification proportional to
+	\(\alpha_0^{-3/2}\).
+\end{proof}
+
+\begin{theorem}[Perturbation of covariance transport]
+	Assume that the hypotheses of the previous proposition hold. Then
+	\[
+		\|T_\lambda - \widehat T_\lambda\|_2
+		\le
+		\|A^{-1/2}\|_2\,\|B^{1/2} - \widehat B^{1/2}\|_2
+		+
+		\|A^{-1/2} - \widehat A^{-1/2}\|_2\,\|\widehat B^{1/2}\|_2,
+	\]
+	and therefore
+	\[
+		\|T_\lambda - \widehat T_\lambda\|_2
+		\le
+		\frac{\|A^{-1/2}\|_2}{2\beta_0^{1/2}}\,\eta_B
+		+
+		\frac{\|\widehat B^{1/2}\|_2}{2\alpha_0^{3/2}}\,\eta_A.
+	\]
+	In particular, there exists an amplification factor
+	\(K_\lambda(C_X,C_Y)\) such that
+	\[
+		\|T_\lambda - \widehat T_\lambda\|_2
+		\lesssim
+		K_\lambda(C_X,C_Y)(\eta_A + \eta_B),
+	\]
+	where \(K_\lambda\) deteriorates as the regularized spectra approach zero.
+\end{theorem}
+
+\begin{proof}[Proof sketch]
+	Split the difference as
+	\[
+		T_\lambda - \widehat T_\lambda
+		=
+		A^{-1/2}(B^{1/2} - \widehat B^{1/2})
+		+
+		(A^{-1/2} - \widehat A^{-1/2})\widehat B^{1/2},
+	\]
+	then apply the triangle inequality and the previous proposition. The final bound
+	is first order in \(\eta_A\) and \(\eta_B\), with constants determined by the
+	regularized spectral gaps.
+\end{proof}
 
 The randomized and arithmetic contributions can then be separated as
 \[
@@ -161,6 +273,20 @@ The randomized and arithmetic contributions can then be separated as
 	\eta_B \le \eta_{\mathrm{rand},B} + \eta_{\mathrm{fp},B}.
 \]
 For spectra with visible decay, the randomized term is governed by the tail beyond the chosen rank, up to oversampling constants \cite{halko2011finding,martinsson2020randnla}. The floating-point term, by contrast, is controlled by the precision used in the sketch products and by the accumulation length. The thesis question is precisely how these two error sources should be balanced against each other.
+
+\begin{corollary}[Perturbation of corrected future data]
+	Under the hypotheses of the theorem,
+	\[
+		\|Z_f T_\lambda - Z_f \widehat T_\lambda\|_F
+		\le
+		\|Z_f\|_F\,\|T_\lambda - \widehat T_\lambda\|_2.
+	\]
+\end{corollary}
+
+\begin{proof}
+	This is the submultiplicativity of the Frobenius norm with the operator norm on
+	the right.
+\end{proof}
 
 \section{Algorithmic Consequences}
 
