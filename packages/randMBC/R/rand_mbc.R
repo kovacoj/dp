@@ -32,6 +32,8 @@ fit_rand_mbc <- function(
         ratio_max_trace
     )
 
+    start <- proc.time()[[3L]]
+
     marginals <- qdm_adjust_matrix(
         y_hist,
         x_hist,
@@ -42,6 +44,7 @@ fit_rand_mbc <- function(
         ratio_max = ratio_max,
         ratio_max_trace = ratio_max_trace
     )
+
     latent_source <- gaussianize_matrix(marginals$x_hist, marginals$x_hist)
     latent_target <- gaussianize_matrix(y_hist, y_hist)
     latent_future <- gaussianize_matrix(marginals$x_fut, marginals$x_hist)
@@ -89,7 +92,8 @@ fit_rand_mbc <- function(
         sketch = sketch,
         lambda = lambda,
         rank = min(as.integer(rank), ncol(x_hist)),
-        ratio_seq = marginals$controls$ratio_seq
+        ratio_seq = marginals$controls$ratio_seq,
+        runtime = proc.time()[[3L]] - start
     )
 }
 

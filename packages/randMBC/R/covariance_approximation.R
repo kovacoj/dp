@@ -44,17 +44,21 @@ rand_cov_approx <- function(
     cov_approx <- q %*% b %*% t(q)
     cov_regularized <- cov_approx + diag(lambda, p)
     eigvals <- eigen((b + t(b)) / 2, symmetric = TRUE, only.values = TRUE)$values
+    reg_eigvals <- eigen((cov_regularized + t(cov_regularized)) / 2, symmetric = TRUE, only.values = TRUE)$values
 
     list(
         Q = q,
         B = b,
+        covariance_raw = cov_approx,
         covariance = cov_regularized,
         lambda = lambda,
         rank = rank_used,
         sketch = sketch,
         precision = list(mult = mult_prec, orth = orth_prec),
         eigvals = eigvals,
+        reg_eigvals = reg_eigvals,
         residual_norm_est = sampled_range_residual(y_for_qr, q),
+        lambda_min_reg = min(reg_eigvals),
         condition_est = kappa(cov_regularized),
         runtime = proc.time()[[3L]] - start
     )

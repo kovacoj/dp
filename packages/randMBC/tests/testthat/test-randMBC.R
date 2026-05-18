@@ -7,7 +7,7 @@ test_that("rank restoration preserves the columnwise multiset", {
     values <- matrix(c(3, 1, 2, 9, 7, 8), nrow = 3, ncol = 2)
     scores <- matrix(c(0.2, -1, 0.1, 2, 0.3, 0), nrow = 3, ncol = 2)
 
-    restored <- randMBC:::rank_restore_matrix(values, scores)
+    restored <- rank_restore_matrix(values, scores)
 
     expect_equal(sort(restored[, 1]), sort(values[, 1]))
     expect_equal(sort(restored[, 2]), sort(values[, 2]))
@@ -19,7 +19,7 @@ test_that("covariance action matches explicit covariance product", {
     rhs <- matrix(rnorm(8), nrow = 4, ncol = 2)
 
     expect_equal(
-        randMBC:::covariance_action(z, rhs),
+        covariance_action(z, rhs),
         (crossprod(z) / nrow(z)) %*% rhs
     )
 })
@@ -31,9 +31,12 @@ test_that("rand_cov_approx returns regularized covariance metadata", {
 
     expect_equal(dim(fit$Q), c(4L, 2L))
     expect_equal(dim(fit$B), c(2L, 2L))
+    expect_equal(dim(fit$covariance_raw), c(4L, 4L))
     expect_equal(dim(fit$covariance), c(4L, 4L))
     expect_true(all(eigen((fit$covariance + t(fit$covariance)) / 2, symmetric = TRUE)$values > 0))
     expect_true(fit$residual_norm_est >= 0)
+    expect_true(is.numeric(fit$lambda_min_reg))
+    expect_true(fit$lambda_min_reg > 0)
 })
 
 test_that("cov_transport is identity for identical inputs", {
@@ -50,6 +53,8 @@ test_that("fit_rand_mbc preserves marginal values columnwise", {
 
     fit <- fit_rand_mbc(x_hist, y_hist, x_fut, rank = 2, oversampling = 1, precision = "double")
     expect_equal(dim(fit$corrected), dim(x_fut))
+    expect_true(is.numeric(fit$runtime))
+    expect_true(fit$runtime >= 0)
 
     for (j in seq_len(ncol(x_fut))) {
         expect_equal(sort(fit$corrected[, j]), sort(fit$marginals$x_fut[, j]))
@@ -78,7 +83,7 @@ test_that("ratio-aware marginal adjustment preserves nonnegativity and dry days"
     x_hist <- matrix(c(0, 0.05, 0.2, 0.7, 0, 0.1, 0.5, 1.1), ncol = 1)
     x_fut <- matrix(c(0, 0.02, 0.15, 0.6, 0, 0.05), ncol = 1)
 
-    fit <- randMBC:::qdm_adjust_matrix(y_hist, x_hist, x_fut, ratio_seq = TRUE, trace = 0.05)
+    fit <- qdm_adjust_matrix(y_hist, x_hist, x_fut, ratio_seq = TRUE, trace = 0.05)
 
     expect_true(all(fit$x_hist >= 0))
     expect_true(all(fit$x_fut >= 0))
