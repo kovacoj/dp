@@ -27,6 +27,9 @@ The climate-model material is important, but it is an application target rather 
 - `src/MBC/`
   External R package for multivariate climate-model bias correction. This is the main application-side reference.
 
+- `packages/randMBC/`
+  Original R package for randomized low-rank covariance transport in multivariate bias correction.
+
 - `literature/`
   Papers and reference material for randNLA and related methods.
 

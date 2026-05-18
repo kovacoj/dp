@@ -1,0 +1,21 @@
+Package: randMBC
+Type: Package
+Title: Randomized Multivariate Bias Correction Backend
+Version: 0.0.1
+Authors@R: person(given = "Thesis", family = "Author", role = c("aut", "cre"), email = "author@example.com")
+Description: Experimental backend for randomized low-rank covariance
+    transport in multivariate climate bias correction. The package
+    provides covariance sketching, regularized transport maps, and a
+    minimal end-to-end prototype for dependence correction after
+    marginal adjustment.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Depends:
+    R (>= 4.1.0)
+Imports:
+    stats
+Suggests:
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+RoxygenNote: 7.3.2
