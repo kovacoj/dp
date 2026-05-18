@@ -1,0 +1,191 @@
+\chapter{Randomized Covariance Transport} \label{ch:randcovtransport}
+
+This chapter formulates the climate-facing problem in the thesis that is closest to its numerical core. The climate-model application matters, but the main mathematical object is not the full post-processing workflow. It is a regularized dependence-correction map built from empirical covariance operators after marginal adjustment. This viewpoint keeps the discussion anchored in randomized numerical linear algebra and mixed-precision perturbation analysis while still preserving a clear connection to multivariate bias correction.
+
+Existing multivariate bias-correction methods already show why dependence structure matters. Quantile-delta mapping (QDM) corrects marginal distributions while preserving modeled changes in quantiles \cite{cannon2015qdm}. Methods such as MBCp and MBCr combine marginal correction with dependence adjustment, and MBCn and later rank-based approaches push further toward correcting the full multivariate distribution \cite{cannon2016mbc,cannon2018mbcn,vrac2015ecbc,vrac2018r2d2}. At the same time, the climate literature repeatedly warns that bias correction should not be treated as a black-box distributional repair, especially when the method modifies structures that matter dynamically or physically \cite{maraun2016biasreview}. For the present thesis, this leads to a narrower and more analyzable question: can one replace an expensive dependence-correction step by a randomized low-rank approximation whose finite-precision behavior can still be controlled?
+
+The main claim of this chapter is therefore methodological. Rather than analyze the full nonlinear climate workflow at once, we isolate a covariance-based transport problem in a latent dependence space. This reduction is still rich enough to capture the main tradeoffs between sketch dimension, regularization, conditioning, and arithmetic precision, but it is much cleaner than attempting a direct perturbation analysis of a fully nonlinear multivariate adjustment scheme.
+
+\section{Latent Dependence Representation}
+
+Let
+\[
+	X_h \in \R^{n \times p}, \qquad X_f \in \R^{m \times p}, \qquad Y_h \in \R^{n \times p}
+\]
+denote historical climate-model data, future climate-model data, and historical reference data, respectively. The column dimension \(p\) may encode several physical variables, nearby locations, lags, seasonal features, or any local multivariate state used for downstream post-processing.
+
+The first stage remains standard. Each marginal series is corrected by a univariate method of QDM type,
+\[
+	\widetilde X_h,\, \widetilde X_f = \operatorname{QDM}(X_h,X_f;Y_h),
+\]
+so that the eventual output inherits the desired marginal behavior from the reference historical data together with modeled changes in quantiles \cite{cannon2015qdm}. What remains is the dependence correction.
+
+To express dependence in a form closer to linear algebra, it is convenient to pass to a latent Gaussianized space. For each column \(j\), let \(\widehat F_j\) denote the empirical distribution function of the corresponding marginally corrected calibration sample, and let \(\Phi\) denote the standard normal distribution function. We then define
+\[
+	Z_X(:,j) = \Phi^{-1}\!\bigl(\widehat F_j(\widetilde X_h(:,j))\bigr),
+	\qquad
+	Z_Y(:,j) = \Phi^{-1}\!\bigl(\widehat F_j(Y_h(:,j))\bigr),
+\]
+and similarly obtain \(Z_f\) from \(\widetilde X_f\). In this representation, marginal correction is separated from dependence correction: the marginals are handled before and after the latent transform, while the multivariate adjustment acts on the standardized latent variables.
+
+This reduction is not meant to claim that all relevant climate dependence is Gaussian. It is a modeling step that isolates a dependence operator that is computationally tractable and mathematically interpretable. In particular, it allows the dependence-correction stage to be expressed through covariance operators in a finite-dimensional inner-product space.
+
+\section{Regularized Covariance Transport}
+
+Assume that the columns of \(Z_X\) and \(Z_Y\) have been centered. Their empirical covariance operators are
+\[
+	C_X = \frac{1}{n} Z_X^\top Z_X,
+	\qquad
+	C_Y = \frac{1}{n} Z_Y^\top Z_Y.
+\]
+The dependence-correction step is then represented by the regularized transport map
+\[
+	T_\lambda = (C_X + \lambda I)^{-1/2}(C_Y + \lambda I)^{1/2},
+\]
+where \(\lambda > 0\) is a regularization parameter.
+
+The role of \(\lambda\) is both numerical and conceptual. Numerically, it keeps the source and target operators strictly positive definite and prevents the inverse square root from reacting catastrophically to small singular values or nearly redundant variables. Conceptually, it acknowledges that in high-dimensional post-processing tasks one should not insist on recovering dependence structure below the scale at which the empirical covariance is already poorly determined.
+
+The corrected latent future data are then obtained as
+\[
+	Z_f^{\mathrm{corr}} = Z_f T_\lambda.
+\]
+Finally, because a linear map in latent space will generally disturb the exact marginal distributions, the latent correction is used only to update ranks. For each variable, the values from the QDM-corrected future sample \(\widetilde X_f(:,j)\) are sorted and then rearranged according to the ranks of \(Z_f^{\mathrm{corr}}(:,j)\). The final output therefore combines
+\[
+	\text{marginals from QDM} \quad + \quad \text{dependence from covariance transport}.
+\]
+
+This construction should be viewed as a lower-rank and more analyzable alternative to full multivariate distribution matching. It is less ambitious than MBCn in what it tries to capture, but it is correspondingly better aligned with the perturbation tools of numerical linear algebra.
+
+\section{Randomized Low-Rank Approximation}
+
+The direct formation and decomposition of \(C_X\) and \(C_Y\) is unattractive when \(p\) is large. The thesis therefore proposes to approximate the covariance operators by randomized low-rank surrogates. Let \(\Omega \in \R^{p \times \ell}\) be a sketching matrix with \(\ell = r + q\), where \(r\) is the target rank and \(q\) an oversampling parameter. Then the dominant range of \(C_X\) may be sampled through
+\[
+	Y_X = C_X \Omega = \frac{1}{n} Z_X^\top (Z_X \Omega),
+\]
+and analogously for \(C_Y\). This is precisely the type of factorization-friendly structure for which randomized low-rank approximation is effective \cite{halko2011finding,martinsson2020randnla}.
+
+If \(Q_X\) is an orthonormal basis for the range of \(Y_X\), the covariance operator is approximated by
+\[
+	C_X \approx Q_X B_X Q_X^\top,
+	\qquad
+	B_X = Q_X^\top C_X Q_X,
+\]
+with an analogous approximation for \(C_Y\). The transport map is then built from
+\[
+	\widehat C_{X,\lambda} = Q_X B_X Q_X^\top + \lambda I,
+	\qquad
+	\widehat C_{Y,\lambda} = Q_Y B_Y Q_Y^\top + \lambda I.
+\]
+The computational advantage is immediate: the numerically demanding work is concentrated in matrix products of the form \(Z\Omega\) and \(Z^\top(Z\Omega)\), while the eigenanalysis is transferred to the small dense matrices \(B_X\) and \(B_Y\).
+
+The point is not only efficiency. A low-rank approximation introduces an explicit randomized error scale. Once this scale is visible, it becomes meaningful to ask whether lower precision is acceptable because its rounding error remains smaller than the approximation error already introduced by the randomized compression.
+
+\section{Mixed Precision and Balancing Inexactness}
+
+This is the place where the climate application and the mixed-precision chapter meet most naturally. The important question is not whether lower precision is faster in the abstract. It is whether reduced precision changes the dependence correction less than the inexactness already present in the modeling pipeline. This is exactly the viewpoint advocated in recent mixed-precision work on balancing multiple sources of inexactness \cite{carson2026balancing,higham2022mixed}.
+
+For the proposed method, the natural arithmetic split is the following. The bulk products
+\[
+	Z\Omega, \qquad Z^\top(Z\Omega)
+\]
+are the most plausible candidates for reduced precision. By contrast, the orthogonalization that produces \(Q\), the small eigendecompositions of \(B_X\) and \(B_Y\), and the evaluation of matrix square roots and inverse square roots are more sensitive and are therefore better kept in double precision. This follows the general mixed-precision pattern already visible in least-squares sketching and refinement methods: use cheaper arithmetic where the computation is large and structurally robust, and keep higher precision where instability would be amplified by conditioning \cite{carson2024mixedsketching,higham2021lowerprecision}.
+
+Accordingly, the computed covariance approximation should be written as
+\[
+	\widehat C_X = C_X + E_{\mathrm{rand},X} + E_{\mathrm{fp},X},
+	\qquad
+	\widehat C_Y = C_Y + E_{\mathrm{rand},Y} + E_{\mathrm{fp},Y},
+\]
+where \(E_{\mathrm{rand}}\) denotes randomized approximation error and \(E_{\mathrm{fp}}\) floating-point error. The key regime is the balanced one,
+\[
+	\|E_{\mathrm{fp}}\| \lesssim \|E_{\mathrm{rand}}\|,
+\]
+or more generally when the floating-point perturbation remains below the statistical or modeling tolerance of the application. In that regime, computing the sketch in full double precision would amount to solving one part of the numerical problem much more accurately than the rest of the pipeline warrants.
+
+\section{Perturbation Perspective}
+
+The central analytical task is not to study the entire bias-correction workflow at once, but to bound the perturbation of the transport map induced by the covariance approximation. Define
+\[
+	A = C_X + \lambda I,
+	\qquad
+	B = C_Y + \lambda I,
+\]
+and let
+\[
+	\widehat A = A + \Delta A,
+	\qquad
+	\widehat B = B + \Delta B
+\]
+be the regularized approximations produced by randomized low-rank compression and finite-precision arithmetic. Then
+\[
+	T_\lambda = A^{-1/2}B^{1/2},
+	\qquad
+	\widehat T_\lambda = \widehat A^{-1/2}\widehat B^{1/2}.
+\]
+The natural forward quantities are
+\[
+	\|T_\lambda - \widehat T_\lambda\|_2
+	\qquad \text{and} \qquad
+	\|Z_f(T_\lambda - \widehat T_\lambda)\|_F.
+\]
+
+At a first formal level one may split the transport error as
+\[
+	\|T_\lambda - \widehat T_\lambda\|_2
+	\le
+	\|A^{-1/2}\|_2\,\|B^{1/2} - \widehat B^{1/2}\|_2
+	+
+	\|A^{-1/2} - \widehat A^{-1/2}\|_2\,\|\widehat B^{1/2}\|_2.
+\]
+This identity already reveals the main conditioning mechanism. Small covariance perturbations are not enough by themselves. Their effect is filtered through matrix square roots and, more severely, inverse square roots. Therefore the decisive quantity is not only the size of \(\Delta A\) and \(\Delta B\), but also the spectral safety margin created by the regularization parameter \(\lambda\).
+
+If
+\[
+	\|\Delta A\|_2 \le \eta_A,
+	\qquad
+	\|\Delta B\|_2 \le \eta_B,
+\]
+then one expects matrix-function perturbation estimates to lead to a bound of the form
+\[
+	\|T_\lambda - \widehat T_\lambda\|_2
+	\lesssim
+	K_\lambda(C_X,C_Y)(\eta_A + \eta_B),
+\]
+where the amplification factor \(K_\lambda\) deteriorates as \(\lambda_{\min}(C_X + \lambda I)\) or \(\lambda_{\min}(C_Y + \lambda I)\) approaches zero. This is the mathematical reason why regularization is not a secondary implementation detail in the present problem. It is part of the perturbation theory itself.
+
+The randomized and arithmetic contributions can then be separated as
+\[
+	\eta_A \le \eta_{\mathrm{rand},A} + \eta_{\mathrm{fp},A},
+	\qquad
+	\eta_B \le \eta_{\mathrm{rand},B} + \eta_{\mathrm{fp},B}.
+\]
+For spectra with visible decay, the randomized term is governed by the tail beyond the chosen rank, up to oversampling constants \cite{halko2011finding,martinsson2020randnla}. The floating-point term, by contrast, is controlled by the precision used in the sketch products and by the accumulation length. The thesis question is precisely how these two error sources should be balanced against each other.
+
+\section{Algorithmic Consequences}
+
+This formulation leads to a concrete algorithmic decomposition.
+\begin{enumerate}
+	\item Correct marginals by QDM.
+	\item Transform the corrected calibration and future samples to a latent rank-normal space.
+	\item Approximate the calibration covariance operators by randomized low-rank sketches.
+	\item Build a regularized covariance transport map from the low-rank surrogates.
+	\item Apply the map to the future latent data.
+	\item Restore the target marginals by rank rearrangement.
+\end{enumerate}
+
+This is the natural architecture for the software contribution as well. The implementation should separate a randomized covariance-approximation layer, a transport-map layer, and a climate-facing wrapper that handles marginal correction and rank restoration. Such a decomposition keeps the numerical core reusable while preserving a clear application entry point.
+
+The same decomposition also determines the experimental program. The decisive sweeps are not arbitrary. They should vary the approximation rank, the regularization parameter, and the arithmetic precision while tracking covariance error, transport-map error, and the induced dependence error on the corrected future data. In particular, one should expect a regime where single precision is essentially indistinguishable from double because randomized truncation already dominates, and another regime where further rank increase reveals floating-point error because the approximation error has become too small to hide it.
+
+\section{Role in the Thesis}
+
+The purpose of this chapter is not to claim that covariance transport solves the whole problem of multivariate climate bias correction. It does not replace the need for application-side diagnostics, and it should not be presented as a universal substitute for richer multivariate schemes such as MBCn. Its role is narrower and more precise. It identifies a mathematically serious dependence-correction problem that is simultaneously
+\begin{enumerate}
+	\item motivated by climate-model post-processing,
+	\item expressible in the language of randomized low-rank approximation,
+	\item sensitive to conditioning and regularization,
+	\item and naturally suited to mixed-precision analysis.
+\end{enumerate}
+
+For the later parts of the thesis, this chapter therefore acts as a bridge. Upstream, it uses the perturbation viewpoint of \Cref{ch:mixedprecision} and the randomized approximation ideas from \Cref{ch:randls}. Downstream, it provides the specific method family that the implementation and the climate-oriented experiments should test. In this sense, randomized covariance transport is the point at which the thesis becomes simultaneously application-aware and still unmistakably about numerical linear algebra.
