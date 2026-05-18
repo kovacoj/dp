@@ -1,0 +1,47 @@
+\name{fit_rand_mbc}
+\alias{fit_rand_mbc}
+\title{Fit randomized multivariate bias correction}
+\description{Runs the current randMBC backend: columnwise marginal adjustment, latent Gaussianization, randomized covariance approximation, regularized covariance transport, and marginal rank restoration.}
+\usage{
+fit_rand_mbc(
+  x_hist,
+  y_hist,
+  x_fut,
+  rank = 20L,
+  oversampling = 10L,
+  sketch = c("gaussian", "rademacher"),
+  precision = c("double", "single", "half", "bfloat16"),
+  orth_prec = c("double", "single"),
+  lambda = 1e-6,
+  ratio_seq = rep(FALSE, ncol(x_hist)),
+  trace = 0.05,
+  trace_calc = 0.5 * trace,
+  ratio_max = 2,
+  ratio_max_trace = 10 * trace
+)
+}
+\arguments{
+  \item{x_hist}{Historical model matrix.}
+  \item{y_hist}{Historical reference matrix with the same dimensions as \code{x_hist}.}
+  \item{x_fut}{Future model matrix with the same number of columns as \code{x_hist}.}
+  \item{rank}{Target covariance approximation rank.}
+  \item{oversampling}{Oversampling parameter for the randomized range finder.}
+  \item{sketch}{Sketch distribution used for covariance approximation.}
+  \item{precision}{Simulated precision used in the covariance-action products.}
+  \item{orth_prec}{Simulated precision used before orthogonalization.}
+  \item{lambda}{Regularization parameter for the covariance approximation.}
+  \item{ratio_seq}{Logical vector marking columns that should use ratio-style QDM handling, for example precipitation-like variables.}
+  \item{trace}{Dry-day threshold for ratio columns. Values below this threshold are zeroed after marginal adjustment.}
+  \item{trace_calc}{Internal threshold used to lift zero-like ratio values before quantile calculations.}
+  \item{ratio_max}{Maximum multiplicative change imposed on low-reference quantiles for ratio columns.}
+  \item{ratio_max_trace}{Threshold below which \code{ratio_max} is enforced.}
+}
+\value{A list containing corrected future samples, corrected historical samples, post-QDM marginals, transport diagnostics, and the fitted covariance surrogates.}
+\examples{
+set.seed(2)
+x_hist <- matrix(rnorm(60), nrow = 20, ncol = 3)
+y_hist <- x_hist + matrix(rnorm(60, sd = 0.1), nrow = 20, ncol = 3)
+x_fut <- matrix(rnorm(45), nrow = 15, ncol = 3)
+fit <- fit_rand_mbc(x_hist, y_hist, x_fut, rank = 2, oversampling = 1)
+dim(fit$corrected)
+}

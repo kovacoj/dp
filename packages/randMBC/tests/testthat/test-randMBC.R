@@ -72,3 +72,35 @@ test_that("fit_rand_mbc reduces calibration dependence error on simple synthetic
     expect_true(is.numeric(fit$diagnostics$pearson_error))
     expect_true(is.numeric(fit$diagnostics$quantile_error))
 })
+
+test_that("ratio-aware marginal adjustment preserves nonnegativity and dry days", {
+    y_hist <- matrix(c(0, 0.1, 0.4, 1.2, 0, 0.3, 0.8, 1.5), ncol = 1)
+    x_hist <- matrix(c(0, 0.05, 0.2, 0.7, 0, 0.1, 0.5, 1.1), ncol = 1)
+    x_fut <- matrix(c(0, 0.02, 0.15, 0.6, 0, 0.05), ncol = 1)
+
+    fit <- randMBC:::qdm_adjust_matrix(y_hist, x_hist, x_fut, ratio_seq = TRUE, trace = 0.05)
+
+    expect_true(all(fit$x_hist >= 0))
+    expect_true(all(fit$x_fut >= 0))
+    expect_equal(sum(fit$x_fut == 0), 2)
+})
+
+test_that("fit_rand_mbc accepts per-column ratio control", {
+    set.seed(12)
+    x_hist <- cbind(rnorm(20), pmax(0, rnorm(20, mean = 0.2, sd = 0.2)))
+    y_hist <- cbind(x_hist[, 1] + 0.1, pmax(0, x_hist[, 2] * 1.2))
+    x_fut <- cbind(rnorm(15), pmax(0, rnorm(15, mean = 0.15, sd = 0.2)))
+
+    fit <- fit_rand_mbc(
+        x_hist,
+        y_hist,
+        x_fut,
+        rank = 2,
+        oversampling = 0,
+        ratio_seq = c(FALSE, TRUE),
+        trace = c(0.05, 0.05)
+    )
+
+    expect_equal(fit$ratio_seq, c(FALSE, TRUE))
+    expect_true(all(fit$corrected[, 2] >= 0))
+})

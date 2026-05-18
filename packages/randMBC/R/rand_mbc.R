@@ -7,15 +7,41 @@ fit_rand_mbc <- function(
     sketch = c("gaussian", "rademacher"),
     precision = c("double", "single", "half", "bfloat16"),
     orth_prec = c("double", "single"),
-    lambda = 1e-6
+    lambda = 1e-6,
+    ratio_seq = rep(FALSE, ncol(x_hist)),
+    trace = 0.05,
+    trace_calc = 0.5 * trace,
+    ratio_max = 2,
+    ratio_max_trace = 10 * trace
 ) {
     sketch <- match.arg(sketch)
     precision <- match.arg(precision)
     orth_prec <- match.arg(orth_prec)
 
-    validate_rand_mbc_inputs(x_hist, y_hist, x_fut, rank, oversampling, lambda)
+    validate_rand_mbc_inputs(
+        x_hist,
+        y_hist,
+        x_fut,
+        rank,
+        oversampling,
+        lambda,
+        ratio_seq,
+        trace,
+        trace_calc,
+        ratio_max,
+        ratio_max_trace
+    )
 
-    marginals <- qdm_adjust_matrix(y_hist, x_hist, x_fut)
+    marginals <- qdm_adjust_matrix(
+        y_hist,
+        x_hist,
+        x_fut,
+        ratio_seq = ratio_seq,
+        trace = trace,
+        trace_calc = trace_calc,
+        ratio_max = ratio_max,
+        ratio_max_trace = ratio_max_trace
+    )
     latent_source <- gaussianize_matrix(marginals$x_hist, marginals$x_hist)
     latent_target <- gaussianize_matrix(y_hist, y_hist)
     latent_future <- gaussianize_matrix(marginals$x_fut, marginals$x_hist)
@@ -62,11 +88,24 @@ fit_rand_mbc <- function(
         precision = list(mult = precision, orth = orth_prec),
         sketch = sketch,
         lambda = lambda,
-        rank = min(as.integer(rank), ncol(x_hist))
+        rank = min(as.integer(rank), ncol(x_hist)),
+        ratio_seq = marginals$controls$ratio_seq
     )
 }
 
-validate_rand_mbc_inputs <- function(x_hist, y_hist, x_fut, rank, oversampling, lambda) {
+validate_rand_mbc_inputs <- function(
+    x_hist,
+    y_hist,
+    x_fut,
+    rank,
+    oversampling,
+    lambda,
+    ratio_seq,
+    trace,
+    trace_calc,
+    ratio_max,
+    ratio_max_trace
+) {
     if (!is.matrix(x_hist) || !is.matrix(y_hist) || !is.matrix(x_fut)) {
         stop("x_hist, y_hist, and x_fut must be matrices")
     }
@@ -85,6 +124,11 @@ validate_rand_mbc_inputs <- function(x_hist, y_hist, x_fut, rank, oversampling, 
     if (!is.numeric(lambda) || length(lambda) != 1L || lambda < 0) {
         stop("lambda must be a nonnegative scalar")
     }
+    expand_qdm_arg(ratio_seq, ncol(x_hist), "ratio_seq")
+    expand_qdm_arg(trace, ncol(x_hist), "trace")
+    expand_qdm_arg(trace_calc, ncol(x_hist), "trace_calc")
+    expand_qdm_arg(ratio_max, ncol(x_hist), "ratio_max")
+    expand_qdm_arg(ratio_max_trace, ncol(x_hist), "ratio_max_trace")
 }
 
 rand_mbc_diagnostics <- function(historical_corrected, y_hist, source_cov, target_cov) {

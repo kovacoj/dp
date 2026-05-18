@@ -1,0 +1,31 @@
+\name{rand_cov_approx}
+\alias{rand_cov_approx}
+\title{Randomized low-rank covariance approximation}
+\description{Approximates the covariance of a latent data matrix with a randomized range finder and returns a regularized low-rank surrogate.}
+\usage{
+rand_cov_approx(
+  Z,
+  rank = 20L,
+  oversampling = 10L,
+  sketch = c("gaussian", "rademacher"),
+  mult_prec = c("double", "single", "half", "bfloat16"),
+  orth_prec = c("double", "single"),
+  lambda = 1e-6
+)
+}
+\arguments{
+  \item{Z}{Numeric matrix whose rows are samples and whose columns are latent features.}
+  \item{rank}{Target approximation rank.}
+  \item{oversampling}{Oversampling parameter added to the target rank before range finding.}
+  \item{sketch}{Sketch distribution used to draw the sampling matrix.}
+  \item{mult_prec}{Simulated precision used in the covariance-action products.}
+  \item{orth_prec}{Simulated precision used before orthogonalization.}
+  \item{lambda}{Nonnegative ridge parameter added to the returned covariance surrogate.}
+}
+\value{A list containing the sampled range basis \code{Q}, the projected core matrix \code{B}, the regularized covariance approximation, and basic diagnostics.}
+\examples{
+set.seed(1)
+z <- matrix(rnorm(80), nrow = 20, ncol = 4)
+fit <- rand_cov_approx(z, rank = 2, oversampling = 1)
+fit$rank
+}
