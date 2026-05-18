@@ -2,13 +2,14 @@
 __pycache__/
 .ipynb_checkpoints/
 .DS_Store
-*.bak
+*.bak*
 
 # R workspace and package build artifacts
 .Rhistory
 .Rlibrary/
 .Rproj.user/
 *.Rcheck/
+/*_*.tar.gz
 packages/**/src/*.o
 packages/**/src/*.so
 packages/**/src/*.dll
