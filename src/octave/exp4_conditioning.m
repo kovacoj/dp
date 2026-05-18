@@ -4,6 +4,11 @@
 
 clear; clc;
 
+this_dir = fileparts(mfilename('fullpath'));
+if ~isempty(this_dir)
+    addpath(this_dir);
+end
+
 n = 1024; d = 20; s = 100; trials = 10;
 kappa_vals = [1e2, 1e4, 1e6, 1e8];
 modes = {'logspace', 'twocluster'};

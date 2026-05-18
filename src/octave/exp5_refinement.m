@@ -3,6 +3,11 @@
 
 clear; clc;
 
+this_dir = fileparts(mfilename('fullpath'));
+if ~isempty(this_dir)
+    addpath(this_dir);
+end
+
 n = 256; d = 10; s = 40; trials = 10;
 x_true = ones(d, 1);
 

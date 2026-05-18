@@ -16,29 +16,29 @@ Randomized Numerical Linear Algebra in Mixed Precision, with an Application to C
 
 ### Code (operational)
 
-| Component | Location | Status |
-|-----------|----------|--------|
-| Gaussian sketch + LS experiment | `src/randLS_experiment.m`, `src/randLS.m` | Done, driver + reusable function |
-| SRHT sketch + LS experiment | `src/srht_experiment.m`, `src/srht.m` | Done |
-| Rademacher sketch + LS experiment | `src/rademacher_experiment.m`, `src/rademacher.m` | Done |
-| Unified sketch experiment (3 methods) | `src/sketch_experiment.m` | Done |
-| Mixed-precision LS experiment | `src/mixedprec_experiment.m`, `src/mixedprec.m` | Done |
-| Simulated low-precision rounding | `src/fl_round.m` | Done (double/single/half/bfloat16) |
-| 3-method comparison driver | `src/compare_sketches.m` | Done |
-| R package rSketchLS | `packages/rSketchLS/` | Done: sketches, sketch_lstsq, experiments, 18 tests |
+| Component                             | Location                                                        | Status                                              |
+| ------------------------------------- | --------------------------------------------------------------- | --------------------------------------------------- |
+| Gaussian sketch + LS experiment       | `src/octave/randLS_experiment.m`, `src/octave/randLS.m`         | Done, driver + reusable function                    |
+| SRHT sketch + LS experiment           | `src/octave/srht_experiment.m`, `src/octave/srht.m`             | Done                                                |
+| Rademacher sketch + LS experiment     | `src/octave/rademacher_experiment.m`, `src/octave/rademacher.m` | Done                                                |
+| Unified sketch experiment (3 methods) | `src/octave/sketch_experiment.m`                                | Done                                                |
+| Mixed-precision LS experiment         | `src/octave/mixedprec_experiment.m`, `src/octave/mixedprec.m`   | Done                                                |
+| Simulated low-precision rounding      | `src/octave/fl_round.m`                                         | Done (double/single/half/bfloat16)                  |
+| 3-method comparison driver            | `src/octave/compare_sketches.m`                                 | Done                                                |
+| R package rSketchLS                   | `packages/rSketchLS/`                                           | Done: sketches, sketch_lstsq, experiments, 18 tests |
 
 ### Thesis text (partially written)
 
-| Chapter | Status | Gaps |
-|---------|--------|------|
-| Introduction | Written | Author/department/supervisor placeholders |
-| Notation | Written | Minor |
-| Mathematical Background | Thin — 21 lines, mostly forward references | Needs SVD, QR vs normal eqns, perturbation theory, condition numbers |
-| Mixed Precision | Written (6 sections) | Good |
-| Randomized Least Squares | Written with 6 formal propositions | Reasonably complete |
-| Numerical Experiments | Framing written, no actual results | Needs experiment specs, figures, tables |
-| Climate Application | Stub (9 lines) | Needs everything |
-| Conclusion | Written | May need adjustment after experiments |
+| Chapter                  | Status                                     | Gaps                                                                 |
+| ------------------------ | ------------------------------------------ | -------------------------------------------------------------------- |
+| Introduction             | Written                                    | Author/department/supervisor placeholders                            |
+| Notation                 | Written                                    | Minor                                                                |
+| Mathematical Background  | Thin — 21 lines, mostly forward references | Needs SVD, QR vs normal eqns, perturbation theory, condition numbers |
+| Mixed Precision          | Written (6 sections)                       | Good                                                                 |
+| Randomized Least Squares | Written with 6 formal propositions         | Reasonably complete                                                  |
+| Numerical Experiments    | Framing written, no actual results         | Needs experiment specs, figures, tables                              |
+| Climate Application      | Stub (9 lines)                             | Needs everything                                                     |
+| Conclusion               | Written                                    | May need adjustment after experiments                                |
 
 ### Research literature
 
@@ -71,7 +71,8 @@ Three research runs completed in `research/runs/`. Key references already cited 
      - Proposition: If S is a (d,ε,δ)-OSE and sketch formation is done in precision u_s, then the effective embedding distortion becomes ε + O(κ₂(A)·u_s·n)
      - This is the thesis's main theoretical contribution; even a conservative bound is valuable
 
-**Research needed**: 
+**Research needed**:
+
 - Wedin/Stewart perturbation bounds for LS (standard references: Stewart 1977, Wedin 1973, or the summary in Björck 1996)
 - Existing coupled sketching+precision bounds: check if Carson/Oktay (2024) or Meier et al. (2023) already have something directly usable, or if the thesis needs to derive its own
 
@@ -87,7 +88,7 @@ Three research runs completed in `research/runs/`. Key references already cited 
 
 #### Experiment 1 — Sketch-size sweep (Gaussian / Rademacher / SRHT)
 
-- **Code**: `src/compare_sketches.m`, `packages/rSketchLS/R/experiments.R`
+- **Code**: `src/octave/compare_sketches.m`, `packages/rSketchLS/R/experiments.R`
 - **Setup**: n=1024, d=20, s ∈ {30, 40, ..., 500}, trials=20, noise=0
 - **Metrics**: residual ratio, solution error, κ₂(SA)
 - **Question**: At what s does each sketch family achieve (1+ε) residual? How much larger must s be for SRHT vs Gaussian?
@@ -96,7 +97,7 @@ Three research runs completed in `research/runs/`. Key references already cited 
 
 #### Experiment 2 — Mixed-precision sketch formation
 
-- **Code**: `src/mixedprec_experiment.m` with `sketch_prec` ∈ {double, single, half, bfloat16}
+- **Code**: `src/octave/mixedprec_experiment.m` with `sketch_prec` ∈ {double, single, half, bfloat16}
 - **Setup**: Same as Exp 1 but fix method=gaussian, s ∈ {40, 60, ..., 200}, solve_prec=double
 - **Question**: At what precision does SA formation start to degrade the solution? Is single always safe? When does half fail?
 - **Expected**: single is safe for well-conditioned A; half fails when κ₂(A) is large or s/d is small
@@ -104,7 +105,7 @@ Three research runs completed in `research/runs/`. Key references already cited 
 
 #### Experiment 3 — Mixed-precision solve
 
-- **Code**: `src/mixedprec_experiment.m` with `solve_prec` ∈ {double, single}
+- **Code**: `src/octave/mixedprec_experiment.m` with `solve_prec` ∈ {double, single}
 - **Setup**: Same as Exp 2 but sketch_prec=double
 - **Question**: Does solving the reduced system in single precision degrade the solution? Correlation with κ₂(SA)?
 - **Expected**: Single-precision solve is safe when κ₂(SA) ≪ 1/u_single ≈ 10⁷; fails otherwise
@@ -120,15 +121,16 @@ Three research runs completed in `research/runs/`. Key references already cited 
 
 #### Experiment 5 — Iterative refinement after sketch-and-solve
 
-- **Code**: New function `src/iterative_refine.m` — compute high-precision residual, apply one correction step
+- **Code**: New function `src/octave/iterative_refine.m` — compute high-precision residual, apply one correction step
 - **Setup**: Same as Exp 2, but follow sketch-and-solve with 1–3 refinement steps
 - **Question**: Can one or two refinement steps recover from half-precision sketch formation?
 - **Expected**: Yes, if κ₂(A) is moderate; refinement dramatically reduces the residual gap
 - **Thesis section**: §6.6
 
 **New code needed**:
-- `src/generate_conditional.m` — generate A with prescribed κ₂
-- `src/iterative_refine.m` — sketch-and-solve + LSQR/refinement loop
+
+- `src/octave/generate_conditional.m` — generate A with prescribed κ₂
+- `src/octave/iterative_refine.m` — sketch-and-solve + LSQR/refinement loop
 - R equivalents in rSketchLS if time permits
 
 **Deliverable**: NumericalExperiments chapter with figures, tables, and interpretation tied back to Props 4.6–4.8.
@@ -140,22 +142,26 @@ Three research runs completed in `research/runs/`. Key references already cited 
 **Goal**: Test whether the methods from Phases 1–2 survive in a realistic workflow.
 
 **Approach**:
+
 1. Use `src/MBC/` (multivariate bias correction) as the application anchor
 2. Identify the linear-algebra bottleneck in MBC: typically a large least-squares or regression step
 3. Replace that step with a sketched solve using rSketchLS or the Octave prototypes
 4. Compare: accuracy of bias correction, runtime, memory
 
 **Questions**:
+
 - Does the sketched solver preserve the statistical quality of the bias correction?
 - Is there a measurable computational gain for realistic climate-data sizes?
 - Where does reduced precision fail in this workflow?
 
 **Practical constraints**:
+
 - Climate data is often moderate-sized (n ~ 10⁴–10⁵, d ~ 10–100), so the absolute speedup from sketching may be modest; the value may lie more in reduced memory or in demonstrating safe precision reduction
 - Need real or realistic climate data — check if MBC package includes example datasets
 
 **New code needed**:
-- `src/climate_sketch_demo.m` or an R script using rSketchLS + MBC
+
+- `src/octave/climate_sketch_demo.m` or an R script using rSketchLS + MBC
 - Possible second R package `climateRandNLA` (optional, per roadmap)
 
 **Deliverable**: ClimateApplication chapter (5–8 pages) with one focused case study.
@@ -167,6 +173,7 @@ Three research runs completed in `research/runs/`. Key references already cited 
 **Goal**: Make rSketchLS publication-quality and ensure all experiments are reproducible.
 
 **Tasks**:
+
 1. Add roxygen2 documentation to all rSketchLS functions
 2. Add vignette demonstrating the main experiment families
 3. Add `README.md` to rSketchLS
@@ -185,6 +192,7 @@ Three research runs completed in `research/runs/`. Key references already cited 
 **Goal**: Complete manuscript.
 
 **Tasks**:
+
 1. Write/finalize all chapter text
 2. Insert experiment figures and tables
 3. Write climate application chapter
@@ -201,13 +209,13 @@ Three research runs completed in `research/runs/`. Key references already cited 
 
 Assuming a 2026 submission deadline:
 
-| Phase | Duration | Target completion |
-|-------|----------|-------------------|
-| Phase 1: Theory | 2–3 weeks | Early June 2026 |
-| Phase 2: Experiments | 3–4 weeks | Late June 2026 |
-| Phase 3: Climate app | 1–2 weeks | Mid July 2026 |
-| Phase 4: Package polish | 1 week | Late July 2026 |
-| Phase 5: Write-up | 2–3 weeks | Mid August 2026 |
+| Phase                   | Duration  | Target completion |
+| ----------------------- | --------- | ----------------- |
+| Phase 1: Theory         | 2–3 weeks | Early June 2026   |
+| Phase 2: Experiments    | 3–4 weeks | Late June 2026    |
+| Phase 3: Climate app    | 1–2 weeks | Mid July 2026     |
+| Phase 4: Package polish | 1 week    | Late July 2026    |
+| Phase 5: Write-up       | 2–3 weeks | Mid August 2026   |
 
 ---
 

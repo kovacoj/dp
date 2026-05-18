@@ -4,6 +4,11 @@
 
 clear; clc;
 
+this_dir = fileparts(mfilename('fullpath'));
+if ~isempty(this_dir)
+    addpath(this_dir);
+end
+
 n = 128; d = 10; s_vals = 20:10:120; trials = 10;
 
 % --- Double-precision baseline ---

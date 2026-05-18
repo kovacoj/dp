@@ -16,6 +16,7 @@ packages/**/src/*.dll
 
 # Local research artifacts
 research/
+experiments/output/
 
 # Local container overrides
 containers/.env

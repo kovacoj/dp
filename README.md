@@ -18,8 +18,8 @@ The climate-model material is important, but it is an application target rather 
 - `notebooks/`
   Exploratory Python notebooks for randomized numerical linear algebra experiments.
 
-- `src/randLS.m`
-  MATLAB experiment for randomized least squares with higher-precision arithmetic.
+- `src/octave/`
+  Thesis-owned MATLAB/Octave prototypes, experiment drivers, and helpers for randomized least squares and mixed-precision studies.
 
 - `src/rSVD/`
   External R package implementing randomized low-rank matrix decompositions. Useful as background and reference material.
@@ -29,6 +29,9 @@ The climate-model material is important, but it is an application target rather 
 
 - `packages/randMBC/`
   Original R package for randomized low-rank covariance transport in multivariate bias correction.
+
+- `experiments/`
+  Reproducible benchmark scripts and helper code for comparing deterministic, randomized, and reference MBC workflows.
 
 - `literature/`
   Papers and reference material for randNLA and related methods.

@@ -64,8 +64,8 @@ Secondary/application topics:
 - `notebooks/`
   Exploratory Python work, currently the clearest record of ongoing randNLA experiments.
 
-- `src/randLS.m`
-  MATLAB/Octave-style randomized least-squares experiment.
+- `src/octave/`
+  Thesis-owned MATLAB/Octave prototypes, experiment drivers, and helpers for randomized least-squares and mixed-precision experiments.
 
 - `src/rSVD/`
   External R package for randomized matrix decompositions. This is background and reference material, not the main original contribution.
