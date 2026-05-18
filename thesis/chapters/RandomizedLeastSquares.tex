@@ -2,7 +2,8 @@
 
 Randomized numerical linear algebra uses randomness as a computational resource for restructuring expensive linear algebra tasks into smaller or more informative surrogate problems. The area now covers low-rank approximation, matrix decompositions, regression, and randomized preconditioning, but overdetermined least-squares problems remain one of its clearest and most influential successes \cite{halko2011finding,martinsson2020randnla,woodruff2014sketching}.
 
-This chapter focuses on sketching-based least-squares methods, which form the algorithmic core of the thesis. The starting point is the overdetermined problem
+This chapter focuses on sketching-based least-squares methods, which provide the
+first model problem for the thesis. The starting point is the overdetermined problem
 \[
 	\min_{x \in \R^d} \|Ax-b\|_2,
 \]
@@ -25,11 +26,20 @@ The geometric engine behind sketching is the notion of an oblivious subspace emb
 \begin{definition}[Oblivious Subspace Embedding] \label{def:ose}
 	Let \(\varepsilon \in (0,1)\) and \(\delta \in (0,1)\). A distribution \(\mathcal{S}\) over \(\R^{s \times n}\) is a \((d,\varepsilon,\delta)\)-oblivious subspace embedding if, for every fixed subspace \(\mathcal{V} \subseteq \R^n\) of dimension at most \(d\),
 	\[
-		\Pr_{S \sim \mathcal{S}}\!\Bigl[\,\forall\, v \in \mathcal{V}:\; (1-\varepsilon)\|v\|_2 \le \|Sv\|_2 \le (1+\varepsilon)\|v\|_2\Bigr] \ge 1 - \delta.
+		\Pr_{S \sim \mathcal{S}}\!\Bigl[\,\forall\, v \in \mathcal{V}:\; (1-\varepsilon)\|v\|_2^2 \le \|Sv\|_2^2 \le (1+\varepsilon)\|v\|_2^2\Bigr] \ge 1 - \delta.
 	\]
 \end{definition}
 
 The key point is that the sketching matrix is drawn independently of the subspace. In the least-squares context, the relevant subspace is the column space of \(A\) (or the augmented space spanned by the columns of \([A\; b]\)), and the OSE property guarantees that the geometry of that subspace is approximately preserved after compression.
+
+The squared-norm convention is the cleanest one for later spectral statements,
+because it is equivalent to controlling the Gram operator \(U^\top S^\top S U\) on
+an orthonormal basis \(U\) of the embedded subspace. It immediately implies the
+unsquared estimate
+\[
+	\sqrt{1-\varepsilon}\,\|v\|_2 \le \|Sv\|_2 \le \sqrt{1+\varepsilon}\,\|v\|_2,
+\]
+so no geometric content is lost by working with squares.
 
 The OSE condition can be interpreted as a uniform Johnson--Lindenstrauss property on subspaces. This connection is made precise by the Johnson--Lindenstrauss lemma, which provides the foundational concentration result.
 
@@ -40,7 +50,7 @@ The OSE condition can be interpreted as a uniform Johnson--Lindenstrauss propert
 	\]
 	then with probability at least \(1 - 1/p\),
 	\[
-		(1-\varepsilon)\|u - v\|_2 \le \|S(u-v)\|_2 \le (1+\varepsilon)\|u - v\|_2
+		(1-\varepsilon)\|u - v\|_2^2 \le \|S(u-v)\|_2^2 \le (1+\varepsilon)\|u - v\|_2^2
 	\]
 	for every pair \(u,v \in \mathcal{P}\).
 \end{lemma}
@@ -87,10 +97,14 @@ The third family relevant here is the subsampled randomized Hadamard transform (
 
 The SRHT is defined as follows. Let \(n = 2^p\) for some integer \(p\). Denote by \(H_n \in \R^{n \times n}\) the normalized Walsh--Hadamard matrix (satisfying \(H_n H_n^\top = I_n\)), and let \(D \in \R^{n \times n}\) be a diagonal matrix whose diagonal entries are independent uniform random signs. Let \(R \in \R^{s \times n}\) be a matrix that selects \(s\) rows uniformly at random without replacement. The SRHT sketch is then
 \[
-	S = \frac{1}{\sqrt{s}}\, R\, H_n\, D.
+	S = \sqrt{\frac{n}{s}}\, R\, H_n\, D.
 \]
 
 The Hadamard matrix can be applied in \(O(n\log n)\) operations via the fast Walsh--Hadamard transform, which makes the total cost of forming \(SA\) equal to \(O(nd\log n)\) instead of the \(O(nds)\) cost of a dense Gaussian sketch. The tradeoff is that the SRHT introduces additional combinatorial structure that makes the analysis more delicate.
+
+With this normalization the SRHT is isotropic in expectation after random row
+selection, so that \(\mathbb E\|Sx\|_2^2 = \|x\|_2^2\) for fixed \(x\). This is the
+structured analogue of the Gaussian scaling discussed earlier.
 
 \begin{proposition}[SRHT Embedding] \label{prop:srht_ose}
 	Let \(S \in \R^{s \times n}\) be an SRHT sketch. For any fixed matrix \(U \in \R^{n \times d}\) with orthonormal columns and any \(\varepsilon \in (0,1)\),
@@ -109,7 +123,11 @@ The subspace-embedding property leads directly to approximation guarantees for t
 \begin{proposition}[Sketched LS Residual Bound] \label{prop:sketched_residual}
 	Let \(A \in \R^{n \times d}\) have full column rank, let \(x_\star = \arg\min\|Ax - b\|_2\), and let \(\hat x = \arg\min\|SAx - Sb\|_2\). If \(S\) is a \((d+1,\varepsilon,\delta)\)-OSE with \(\varepsilon < 1\), then with probability at least \(1-\delta\),
 	\[
-		\|A\hat x - b\|_2 \le \frac{1+\varepsilon}{1-\varepsilon}\,\|Ax_\star - b\|_2.
+		\|A\hat x - b\|_2^2 \le \frac{1+\varepsilon}{1-\varepsilon}\,\|Ax_\star - b\|_2^2,
+	\]
+	and hence
+	\[
+		\|A\hat x - b\|_2 \le \sqrt{\frac{1+\varepsilon}{1-\varepsilon}}\,\|Ax_\star - b\|_2.
 	\]
 \end{proposition}
 
@@ -127,16 +145,21 @@ The subspace-embedding property leads directly to approximation guarantees for t
 
 The residual guarantee is natural but not the only quantity of interest. In many applications, one also cares about the solution error \(\|\hat x - x_\star\|_2\). A bound on the solution error requires additional control over the geometry of the problem, specifically the extent to which the residual contributes to the solution perturbation.
 
-\begin{proposition}[Sketched LS Solution Error] \label{prop:sketched_solution}
-	Under the same hypotheses as \Cref{prop:sketched_residual},
-	\[
-		\|\hat x - x_\star\|_2 \le \frac{\varepsilon}{1-\varepsilon}\,\kappa_2(A)\,\frac{\|Ax_\star - b\|_2}{\|A\|_2\,\|x_\star\|_2}\,\|x_\star\|_2 + O(\varepsilon^2).
-	\]
-\end{proposition}
+\begin{remark}[Solution error versus residual error]
+	Residual guarantees do not automatically imply a comparably small perturbation
+	of the minimizer. In the inconsistent case, the sensitivity of \(x_\star\) is
+	additionally filtered through the conditioning of \(A\) and by the size of the
+	optimal residual relative to the solution itself. This is why the numerical
+	experiments track both residual ratio and relative solution error. The residual
+	bound is the robust first statement, while a formal solution-error theorem
+	requires more careful assumptions than are imposed here.
+\end{remark}
 
-The solution error involves the condition number of the original matrix. This is expected: when the least-squares problem is far from consistent (the residual is large), the sketch can perturb the solution by a larger relative amount. In the consistent case where \(\|Ax_\star - b\|_2 = 0\), the bound simplifies, but the residual bound is typically the more informative statement.
-
-These two propositions together explain the experimental observations: residual quality stabilizes quickly as \(s\) grows, while solution error depends on both \(\varepsilon\) and \(\kappa_2(A)\). The transition from residual-dominated to solution-error-dominated behavior is one of the main features that the numerical experiments are designed to capture.
+These observations together explain the experimental expectations: residual
+quality stabilizes quickly as \(s\) grows, while solution error depends on both
+\(\varepsilon\) and \(\kappa_2(A)\). The transition from residual-dominated to
+solution-error-dominated behavior is one of the main features that the numerical
+experiments are designed to capture.
 
 \section{Conditioning of the Sketched System}
 
@@ -145,11 +168,11 @@ Even when the sketch provides a good embedding in exact arithmetic, the numerica
 \begin{proposition}[Conditioning of the Sketched Matrix] \label{prop:sketched_cond}
 	Let \(A \in \R^{n \times d}\) have full column rank with singular values \(\sigma_1 \ge \cdots \ge \sigma_d > 0\), and let \(S\) be a \((d,\varepsilon,\delta)\)-OSE. Then with probability at least \(1 - \delta\),
 	\[
-		(1-\varepsilon)\,\sigma_d \le \sigma_{\min}(SA) \le \sigma_{\max}(SA) \le (1+\varepsilon)\,\sigma_1,
+		\sqrt{1-\varepsilon}\,\sigma_d \le \sigma_{\min}(SA) \le \sigma_{\max}(SA) \le \sqrt{1+\varepsilon}\,\sigma_1,
 	\]
 	and therefore
 	\[
-		\kappa_2(SA) \le \frac{1+\varepsilon}{1-\varepsilon}\,\kappa_2(A).
+		\kappa_2(SA) \le \sqrt{\frac{1+\varepsilon}{1-\varepsilon}}\,\kappa_2(A).
 	\]
 \end{proposition}
 
@@ -209,3 +232,12 @@ This experiment plays an important organizational role. Mathematically, it gives
 Even before formal guarantees are introduced, the experiment highlights the main questions that drive the later chapters. How large must the sketch dimension \(s\) be before the residual becomes reliably close to optimal? How does the conditioning of the compressed operator \(SA\) change as \(s\) varies? Which sketch family gives the best compromise between simplicity, structure, and numerical behavior? Once mixed precision is introduced, the same framework also makes it possible to ask which arithmetic stages tolerate lower precision and which do not.
 
 The main topics to be developed further are therefore clear: subspace embeddings as the geometric core of sketching, Gaussian and structured sketches as competing algorithmic choices, residual and solution guarantees for sketch-and-solve methods, and the conditioning and finite-precision behavior of the reduced systems. Those topics place the present thesis within the broader RandNLA literature while keeping the attention on the concrete least-squares problems that the code and experiments in this repository already target.
+
+At the same time, least squares is not the final mathematical endpoint of the
+thesis. It is the first model problem in which sketching, conditioning, and finite
+precision interact transparently. In the later covariance-transport chapter, the
+same perturbation viewpoint is transferred from sketched least-squares operators
+to empirical covariance operators and the matrix functions built from them. The
+role of the present chapter is therefore foundational: it supplies the geometric and
+numerical language that the dependence-correction analysis will reuse in a more
+application-aware setting.

@@ -24,3 +24,84 @@ picture survives in a genuine climate-data workflow. The answer need not be a
 dramatic speedup. It is equally useful if the application shows where the numerical
 assumptions behind the randomized or mixed-precision methods are realistic and
 where they begin to fail.
+
+\section{Multivariate Bias Correction}
+
+The relevant climate-facing context is multivariate bias correction. Univariate
+methods such as quantile-delta mapping (QDM) are designed to correct marginal
+distributions while preserving modeled changes in quantiles
+\cite{cannon2015qdm}. They are useful, but they do not by themselves repair the
+dependence structure across variables, locations, or times. That second task is the
+main reason why multivariate methods are needed.
+
+Existing methods already separate this problem into marginal and dependence
+components in different ways. MBCp and MBCr combine marginal adjustment with
+dependence correction, while MBCn pushes further toward matching the full
+multivariate distribution \cite{cannon2016mbc,cannon2018mbcn}. Rank-based
+approaches such as R2D2 extend the same line of thought to higher-dimensional
+dependence adjustment \cite{vrac2015ecbc,vrac2018r2d2}. At the same time, the
+climate literature emphasizes that bias correction should not be treated as a
+black-box distributional repair detached from physical interpretation or dynamical
+structure \cite{maraun2016biasreview}.
+
+\section{Marginals and Dependence}
+
+The proposed workflow in this thesis follows the same broad decomposition, but in
+a form chosen to expose the numerical linear algebra more clearly. Marginal
+correction is handled first by a QDM-type step. Dependence correction is then
+treated separately in a latent standardized or rank-normal space, where the central
+operator is a regularized covariance transport map of the form analyzed in
+\Cref{ch:randcovtransport}.
+
+This decomposition matters conceptually. It allows the climate-facing workflow to
+be described as
+\[
+	\text{marginal correction} + \text{dependence correction},
+\]
+with the second term becoming the main mathematical object of the thesis. In this
+way, the application chapter stays tied to multivariate climate post-processing
+without forcing the entire theory to become a direct analysis of a fully nonlinear
+bias-correction algorithm.
+
+\section{Randomized Covariance Transport}
+
+The thesis does not propose a universal replacement for methods such as MBCn.
+Its narrower proposal is a covariance-based dependence correction step that can be
+compressed by randomized low-rank approximation and analyzed in mixed
+precision. The attraction of this approach is not only speed. It is also that the
+operator
+\[
+	T_\lambda = (C_X + \lambda I)^{-1/2}(C_Y + \lambda I)^{1/2}
+\]
+has a perturbation structure that can be studied directly in terms of conditioning,
+regularization, randomized approximation error, and floating-point error.
+
+From the application point of view, the proposal should therefore be interpreted as
+a computationally cheaper and more analyzable dependence-correction layer. It is
+well suited to regimes in which the dominant challenge is to modify covariance-like
+dependence structure in large multivariate states. It is not intended to dominate
+richer multivariate distribution-matching methods in every possible setting.
+
+\section{Validation Questions}
+
+The application chapter should evaluate the method at two levels. The first level is
+numerical: how accurately is the covariance operator approximated, how sensitive
+is the regularized transport map to lower precision, and how much regularization is
+needed to keep the inverse square root in a benign regime? The second level is
+statistical: after the dependence correction is pushed back to the climate data,
+which marginal and multivariate features are preserved, improved, or degraded?
+
+These questions are deliberately broader than raw runtime. Reduced memory use,
+stable lower-precision behavior, and a clearer map of failure regimes are all valid
+outcomes. In a realistic post-processing workflow, understanding when the method
+fails is often as valuable as demonstrating a speedup.
+
+\section{Limitations}
+
+The limitations should be stated plainly. Covariance transport captures only one
+layer of multivariate structure. It does not by itself represent every nonlinear,
+tail-dependent, or temporally structured feature that a richer bias-correction method
+might target. It is therefore best viewed as a deliberately focused numerical core:
+a dependence-correction operator that is rich enough to be climate-relevant, but
+structured enough to admit randomized low-rank approximation and mixed-
+precision perturbation analysis.

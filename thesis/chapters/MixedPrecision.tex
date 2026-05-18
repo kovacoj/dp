@@ -138,13 +138,50 @@ In the sketch-and-precondition setting, one asks whether lower precision preserv
 enough of the conditioning improvement for the downstream solver to remain
 effective.
 
+\section{Balancing Sources of Inexactness}
+
+Mixed precision is most natural when rounding is not the only source of error in
+the algorithm. Randomized approximation, low-rank truncation, regularization,
+and even finite-sample modelling choices already introduce tolerances below which
+additional arithmetic accuracy may not be useful. In such settings, the purpose of
+precision selection is not to minimize rounding error at all costs. It is to choose
+an arithmetic regime in which rounding remains subordinate to the inexactness
+already accepted elsewhere in the method.
+
+This idea can be summarized schematically as
+\[
+	\eta_{\mathrm{fp}} \lesssim \eta_{\mathrm{alg}},
+\]
+where \(\eta_{\mathrm{fp}}\) denotes floating-point perturbation and
+\(\eta_{\mathrm{alg}}\) the algorithmic error already built into the method. In a
+randomized setting, the more specific target is often
+\[
+	\eta_{\mathrm{fp}} \lesssim \eta_{\mathrm{rand}},
+\]
+meaning that reduced precision is acceptable only when it does not dominate the
+randomized approximation error. In an application-driven setting one may relax
+this further to
+\[
+	\eta_{\mathrm{fp}} \lesssim \tau_{\mathrm{stat}},
+\]
+where \(\tau_{\mathrm{stat}}\) represents statistical or modelling tolerance.
+
+This balancing viewpoint is especially important for the later covariance-transport
+analysis. There, the approximation error from randomized low-rank compression is
+already present before the matrix square roots and inverse square roots are
+evaluated. Computing every preceding product in the highest available precision
+may therefore solve one part of the numerical problem much more accurately than
+the later regularized transport map or the downstream application actually
+warrants. The aim is not maximal local accuracy, but a numerically coherent
+distribution of inexactness across the pipeline.
+
 \section{Role in This Thesis}
 
 Within this thesis, mixed precision is not a side topic. It is one of the main ways
-in which randomized least-squares methods are evaluated. The central question is
-not whether lower precision is always safe, but where it is safe, where it is useful,
-and where it changes the numerical character of the method too much to justify
-the computational gain.
+in which both randomized least-squares methods and randomized covariance
+transport are evaluated. The central question is not whether lower precision is
+always safe, but where it is safe, where it is useful, and where it changes the
+numerical character of the method too much to justify the computational gain.
 
 The later chapters return to this question in numerical experiments and, later, in
 the climate-data workflow. The aim is modest but important: to understand mixed

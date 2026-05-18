@@ -1,11 +1,12 @@
 \chapternotnumbered{Introduction} \label{ch:Introduction}
 
-This thesis studies randomized methods for overdetermined least-squares problems
-and their behavior in mixed-precision arithmetic. The motivation is simple. Many
-least-squares problems arising in scientific computing are large enough that
-classical dense methods become expensive, and modern hardware no longer offers
-one uniform arithmetic. Instead, several precisions are available, often with very
-different speed, memory cost, and numerical reliability.
+This thesis studies randomized numerical linear algebra and mixed-precision
+arithmetic with emphasis on covariance-based dependence correction. The
+motivation is simple. Many linear algebra problems arising in scientific computing
+are large enough that classical dense methods become expensive, and modern
+hardware no longer offers one uniform arithmetic. Instead, several precisions are
+available, often with very different speed, memory cost, and numerical
+reliability.
 
 Randomized numerical linear algebra addresses the first difficulty. The basic idea
 is to replace expensive deterministic operations by randomized approximations
@@ -25,15 +26,18 @@ in another.
 In this thesis, we are interested in the interaction of these two ideas. Sketching
 changes the problem by replacing it with a compressed surrogate. Low precision
 changes the arithmetic by introducing larger rounding errors. Both effects act on
-the same least-squares problem, and both are filtered through conditioning.
+the same operator-theoretic problem, and both are filtered through conditioning.
 Therefore, they should not be studied separately.
 
-The main mathematical focus is on randomized least-squares solvers based on
+The central mathematical contribution pursued here is a mixed-precision
+randomized low-rank covariance transport map for multivariate dependence
+correction. Least squares remains essential, but now as the first model problem in
+which sketching, conditioning, and finite precision can be analyzed in a clean
+setting. We therefore begin with randomized least-squares solvers based on
 Gaussian sketches and structured transforms such as the subsampled randomized
-Hadamard transform. We study how well these sketches preserve the least-squares
-geometry, how the residual and solution errors behave, and how the condition
-number of the reduced system changes. We then return to the same questions in
-the presence of mixed precision.
+Hadamard transform, and then transfer the same perturbation viewpoint to
+regularized covariance operators and the matrix functions used in dependence
+correction.
 
 The climate-model material appears later as an application rather than as the main
 topic of the thesis. Its role is to test whether methods developed on synthetic and
@@ -42,10 +46,13 @@ not be a pure speedup. Reduced memory use, acceptable lower-precision behavior,
 or a clearer picture of failure regimes are also valuable results.
 
 The structure of the thesis is as follows. The preliminary chapters fix notation and
-collect the basic mathematical material. The next chapters discuss mixed precision
-and randomized least squares in more detail. They are followed by numerical
-experiments, which compare approximation quality, conditioning, and arithmetic
-effects. The final substantive chapter considers the climate-model application.
+collect the basic mathematical material. The next chapters discuss mixed
+precision and randomized least squares in more detail, first as model problems
+and then as technical tools. They are followed by a chapter on randomized
+covariance transport, where the main dependence-correction map is formulated and
+its perturbation structure is analyzed. The numerical experiments then test both
+the least-squares and covariance-transport viewpoints, and the final substantive
+chapter returns to the climate-model application.
 
 \begin{remark}[Current Stage]
 	At the current stage of writing, some chapters are still lighter than they should

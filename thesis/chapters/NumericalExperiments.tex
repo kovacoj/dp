@@ -1,24 +1,32 @@
 \chapter{Numerical Experiments} \label{ch:experiments}
 
 This chapter describes the experimental framework used in the repository for
-randomized least-squares solvers. The goal is not only to illustrate the theory, but
-to test whether the geometric statements from \Cref{ch:randls} remain visible in
-computed residuals, computed solutions, and condition numbers of the compressed
-systems. The experiments also provide the first controlled setting in which the
-floating-point questions from \Cref{ch:mixedprecision} can be studied in the same
-benchmark.
+randomized least-squares solvers and for the later covariance-transport problem.
+The goal is not only to illustrate the theory, but to test whether the geometric
+statements from \Cref{ch:randls} and the perturbation viewpoint from
+\Cref{ch:randcovtransport} remain visible in computed residuals, computed
+solutions, covariance approximations, and transport errors. The experiments also
+provide the first controlled setting in which the floating-point questions from
+\Cref{ch:mixedprecision} can be studied in the same benchmark.
 
 At the present stage, the experiments are intentionally synthetic. This is useful.
-By generating the data matrix and the reference solution directly, we can separate
-the effect of the sketch from the complications of a downstream application. The
-experiments are therefore simple enough to interpret and still rich enough to show
-the interaction between embedding quality, conditioning, and arithmetic.
+By generating the data matrix, covariance structure, and reference solution
+directly, we can separate the effect of the sketch from the complications of a
+downstream application. The experiments are therefore simple enough to interpret
+and still rich enough to show the interaction between embedding quality,
+conditioning, regularization, and arithmetic.
 
 \section{Experimental Objective}
 
-The main question is how the quality of a sketched least-squares solve changes as
-the sketch dimension varies and as the sketch family changes. The repository
-currently tracks four quantities:
+The experiments are naturally divided into two parts. Part I studies sketched
+least-squares solvers as the first model problem. Part II studies randomized
+covariance transport as the climate-facing operator problem introduced in
+\Cref{ch:randcovtransport}. The repository currently implements mainly the first
+part, but the second part already has a clear mathematical specification.
+
+For the least-squares experiments, the main question is how the quality of a
+sketched solve changes as the sketch dimension varies and as the sketch family
+changes. The repository currently tracks four quantities:
 \begin{itemize}
 	\item the mean absolute error of the averaged sketch solution,
 	\item the residual ratio relative to a reference least-squares solve,
@@ -177,7 +185,57 @@ designed to make this tradeoff visible.
 
 At the present stage, this chapter should therefore be read mainly as a methodology
 and interpretation chapter. The benchmark structure is already concrete and
-implemented, but the full experimental campaign, especially on the mixed-
-precision side, is still being expanded. Even so, the framework is already explicit
-enough to support the main thesis question: whether randomized compression and
-altered arithmetic can be studied in one coherent numerical-analysis picture.
+implemented for least squares, and the mixed-precision side is still being
+expanded. Even so, the framework is already explicit enough to support the main
+thesis question: whether randomized compression and altered arithmetic can be
+studied in one coherent numerical-analysis picture.
+
+\section{Covariance-Transport Experiment Program}
+
+The later experimental layer of the thesis should test the theory from
+\Cref{ch:randcovtransport} just as directly as the least-squares benchmarks test
+the embedding theory from \Cref{ch:randls}. Instead of tracking only the
+compressed least-squares residual, one should now measure the quality of a
+randomized low-rank covariance approximation and the perturbation it induces in
+the regularized transport map.
+
+For a covariance operator \(C\) and its computed approximation \(\widehat C\), the
+basic numerical diagnostics should include
+\[
+	\|C - \widehat C\|_2,
+	\qquad
+	\|T_\lambda - \widehat T_\lambda\|_2,
+	\qquad
+	\|Z_f T_\lambda - Z_f \widehat T_\lambda\|_F.
+\]
+These quantities separate three layers of error: covariance approximation,
+operator perturbation of the transport map, and the induced perturbation on the
+corrected future data. The associated parameter sweeps should vary the target
+rank, the oversampling parameter, the regularization level \(\lambda\), and the
+working precision used in the sketch products.
+
+This second experimental program is also where the balancing-inexactness idea
+from \Cref{ch:mixedprecision} becomes directly testable. As the approximation
+rank grows, randomized truncation error should decrease. If the arithmetic regime
+is too aggressive, however, a point will be reached at which floating-point error no
+longer remains hidden beneath the approximation error. The decisive numerical
+question is therefore not merely whether lower precision is faster, but where the
+curves begin to separate and how that separation depends on regularization.
+
+\section{Application-Facing Diagnostics}
+
+Once the covariance-transport experiments are connected to a climate-shaped data
+pipeline, the numerical diagnostics should be accompanied by statistical ones. At a
+minimum, one should compare the corrected output against the target dependence
+structure through marginal quantile diagnostics, correlation diagnostics, and
+multivariate summaries of dependence error. The point is not to replace the
+operator-norm viewpoint, but to relate it to the application metrics by which a
+post-processing method would ultimately be judged.
+
+This distinction is important for interpretation. A method may show a visible
+operator perturbation while still producing acceptable application-level dependence
+corrections, or conversely may appear cheap and accurate in low-rank terms while
+failing to preserve the dependence features that matter downstream. The final
+experimental design should therefore keep both scales visible: the numerical scale
+of randomized and floating-point perturbation, and the application scale of
+multivariate climate diagnostics.

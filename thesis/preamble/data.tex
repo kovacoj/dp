@@ -40,28 +40,29 @@
 
 %% Abstract (recommended length around 80-200 words; this is not a copy of your thesis assignment!)
 \newcommand*{\Abstract}{%
-    This thesis studies statistical post-processing of multidimensional climate
-    data with emphasis on methods for correcting and analysing climate-model
-    output. The work is motivated by the need to reduce systematic errors in
-    simulations while preserving realistic dependence structures across
-    variables, space, and time. The thesis combines a review of relevant
-    statistical methods with background on randomized numerical linear algebra
-    and mixed-precision arithmetic, especially where these tools may help with
-    large-scale multivariate datasets. The application part focuses on regional
-    climate-model data for Central Europe and evaluates both statistical quality
-    and numerical aspects of the proposed workflow.
+	This thesis studies randomized numerical linear algebra in mixed precision,
+	with a later application to multivariate climate-model post-processing. The
+	main mathematical objective is to analyze how randomized approximation and
+	finite-precision perturbations interact when empirical covariance operators
+	are compressed and used to construct a regularized dependence-correction
+	map. Least-squares sketching is treated as the first model setting in which
+	these effects can be understood geometrically and numerically. The later
+	climate-facing part uses this viewpoint to formulate a covariance-based
+	transport step for multivariate bias correction, with emphasis on
+	conditioning, regularization, and the tradeoff between randomized and
+	arithmetic error.
 }
 
 %% Subject (short description for PDF metadata)
 \newcommand*{\Subject}{%
-    Statistical post-processing of multidimensional climate data.
+	Statistical post-processing of multidimensional climate data.
 }
 
 %% Keywords (about 3-7)
 \newcommand*{\Keywords}{%
-    postprocessing, statistical analysis, climate models
+	postprocessing, statistical analysis, climate models
 }
 %% Plaintext version for PDF metadata, uncomment if needed (defauls to \Keywords)
 \newcommand*{\KeywordsPlaintext}{%
-    postprocessing, statistical analysis, climate models
+	postprocessing, statistical analysis, climate models
 }
