@@ -47,6 +47,61 @@ structure \cite{maraun2016biasreview}. Recent comparative studies
 multivariate methods preserve different aspects of the joint distribution, and no
 single method dominates across all dependence metrics.
 
+\subsection{QDM, MBCp, MBCr, MBCn, and R2D2}
+
+It is worth stating explicitly how the main existing methods differ in their
+treatment of marginals and dependence, because the thesis proposal is best
+understood by comparison with these baselines.
+
+Quantile-delta mapping (QDM) \cite{cannon2015qdm} is a univariate method. It
+preserves modeled changes in quantiles while adjusting the marginal distribution
+to match the observational reference. QDM does not modify dependence between
+variables: each column is corrected independently. In the workflow proposed in
+this thesis, QDM plays precisely this role --- it handles the marginal step, and
+dependence is left to the subsequent covariance-transport layer.
+
+MBCp \cite{cannon2016mbc} adds a dependence-correction step on top of marginal
+adjustment. It matches the Pearson correlation structure of the reference
+distribution while preserving the corrected marginals via rank rearrangement.
+MBCp is therefore a natural reference for the present thesis, because the
+covariance-transport map also targets second-order dependence. The key difference
+is that MBCp adjusts correlations directly, while the proposed method adjusts the
+full covariance operator through matrix square roots and inverse square roots.
+This gives the covariance-transport map a different algebraic structure and a
+natural entry point for randomized low-rank approximation.
+
+MBCr \cite{cannon2016mbc} is a variant that matches the ratio of ranked values
+rather than correlations, and is therefore more robust to non-Gaussian features
+such as those in precipitation. MBCr is relevant here as a reminder that the
+Gaussianized latent space used in the thesis may not capture all relevant
+dependence structure, especially for bounded or heavy-tailed variables.
+
+MBCn \cite{cannon2018mbcn} is the most ambitious of the Cannon family. It
+iteratively applies random rotations and marginal adjustments until the full
+multivariate distribution of the corrected sample matches the reference. MBCn
+does not target covariance alone; it aims at distributional equivalence in all
+moments. This makes it more powerful than a covariance-only method, but also more
+expensive and harder to analyze numerically. The thesis does not propose to
+replace MBCn. The proposal is narrower: a cheaper and more analyzable
+covariance-based alternative in regimes where full distributional matching is
+either unnecessary or numerically unstable.
+
+R2D2 \cite{vrac2018r2d2} is a rank-resampling approach that preserves the
+dependence structure of the reference by resampling from its rank distribution
+while inserting the QDM-corrected marginal quantiles. R2D2 is conceptually
+simple and does not require a parametric model of dependence. It is, however,
+limited by the availability and smoothness of the empirical rank copula and does
+not naturally admit a low-rank or mixed-precision compression.
+
+The method proposed in this thesis therefore occupies a specific position in this
+landscape: it is a second-order dependence-correction method, like MBCp, but it
+uses a regularized covariance-transport map instead of direct correlation
+matching, and it is explicitly designed for randomized low-rank approximation and
+mixed-precision perturbation analysis. It should be evaluated against these
+baselines not on the basis of universal superiority, but on the basis of whether
+its numerical-algebraic structure provides a useful tradeoff between accuracy,
+cost, and analyzability.
+
 \section{Marginals and Dependence}
 
 The proposed workflow in this thesis follows the same broad decomposition, but in
