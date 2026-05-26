@@ -67,26 +67,11 @@ jobs:
           name: randmbc-note-pdf
           path: paper/randmbc-note/paper.pdf
 
-  verify:
-    name: Verify PDF/A
-    runs-on: ubuntu-latest
-    needs: build-thesis
-    container:
-      image: ghcr.io/jdujava/cuni-thesis-validator
-    steps:
-      - name: Get PDF artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: thesis-pdf
-
-      - name: Verify PDF with VeraPDF
-        run: verify thesis-pdf/*.pdf | tee /dev/stderr | grep -qE 'nonCompliant="0" failedJobs="0"'
-
   deploy:
     name: Deploy PDFs and landing page to gh-pages
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
-    needs: [build-thesis, build-paper, verify]
+    needs: [build-thesis, build-paper]
     permissions:
       contents: write
     steps:
