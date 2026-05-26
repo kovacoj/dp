@@ -36,7 +36,7 @@ larger \(u\), a smaller dynamic range, and therefore a smaller safety margin aga
 cancellation, overflow, and accumulation of rounding errors. The important point
 is that changing precision changes the size of the perturbation allowed at every
 arithmetic step. This is why low precision can be attractive computationally and
-dangerous numerically at the same time \cite{higham2022mixed,higham2023lowprecisions}.
+dangerous numerically at the same time \cite{higham2022mixed,higham2023lowprecisions,carson2023habilitation}.
 
 The standard rounding model is useful because it allows us to interpret the
 computed algorithm as a nearby problem. Once we pass from one scalar operation
@@ -81,7 +81,7 @@ of the algebra actually used to solve it. The latter may involve normal equation
 QR factorizations, augmented systems, or preconditioned iterative refinement.
 Recent work on mixed-precision least squares shows that lower precision can be
 effective, but only in conditioning regimes that still allow stable refinement or
-correction \cite{higham2021lowerprecision,carson2020threeprecision,gao2025mixedprecision}.
+correction \cite{higham2021lowerprecision,carson2020threeprecision,gao2025mixedprecision,oktay2024mixedprecision}.
 
 \section{Mixed Precision in Linear Algebra Algorithms}
 
@@ -176,6 +176,39 @@ may therefore solve one part of the numerical problem much more accurately than
 the later regularized transport map or the downstream application actually
 warrants. The aim is not maximal local accuracy, but a numerically coherent
 distribution of inexactness across the pipeline.
+
+\section{Stochastic Rounding as an Optional Model}
+
+The standard rounding model assumes deterministic rounding to nearest. An
+alternative is stochastic rounding, where each rounding step introduces a
+zero-mean random perturbation rather than a worst-case biased one. In favorable
+settings, this can reduce the growth of accumulated rounding errors from
+\(O(nu)\) to closer to \(O(\sqrt{n}\,u)\) in high probability, because the
+random rounding errors partially cancel instead of accumulating coherently
+\cite{higham2022mixed}.
+
+Stochastic rounding is attractive in the present setting because the randomized
+covariance sketch already contains algorithmic randomness. If rounding errors can
+be modeled as approximately unbiased perturbations, their accumulation may be
+less pessimistic than in worst-case deterministic rounding analysis. This is
+especially relevant for the dominant products
+\[
+	Z\Omega, \qquad Z^\top(Z\Omega),
+\]
+which contain many accumulated low-precision operations.
+
+However, stochastic rounding introduces its own complications. Reproducibility is
+lost unless the random rounding stream is seeded. Hardware support remains
+limited, and the variance of individual rounding steps can produce occasional
+outliers. In addition, the unbiased-accumulation argument requires assumptions
+about independence that may not hold for structured or correlated data.
+
+For the present thesis, stochastic rounding is therefore treated as an optional
+probabilistic model, not as a baseline assumption. The main analysis uses
+deterministic rounding to nearest, which is the model available on all current
+hardware. Stochastic rounding may be revisited as an extension once the
+deterministic analysis is complete and the relevant conditioning regimes are
+understood.
 
 \section{Role in This Thesis}
 

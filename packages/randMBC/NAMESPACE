@@ -1,6 +1,8 @@
 export(cov_transport)
 export(fit_rand_mbc)
 export(fl_round)
+export(generate_climate_cov)
+export(generate_cov_operator)
 export(is_fp_hidden)
 export(precision_model)
 export(rand_cov_approx)

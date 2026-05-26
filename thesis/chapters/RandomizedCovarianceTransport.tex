@@ -198,6 +198,53 @@ with the same form for \(\Delta Y_Y\) \cite{higham2022mixed}. Thus the floating-
 \]
 or more generally when the floating-point perturbation remains below the statistical or modeling tolerance of the application. In that regime, computing the sketch in full double precision would amount to solving one part of the numerical problem much more accurately than the rest of the pipeline warrants.
 
+\begin{proposition}[Covariance sketch product perturbation]
+	\label{prop:cov_sketch_perturbation}
+	Let \(Z \in \R^{n \times p}\) be a centered data matrix with empirical
+	covariance \(C = \frac{1}{n}Z^\top Z\), let
+	\(\Omega \in \R^{p \times \ell}\) be a sketching matrix, and let the
+	computed sample product be formed in working precision with unit roundoff
+	\(u\). Write
+	\[
+		\widehat Y
+		= \operatorname{fl}_u\!\left(\frac{1}{n}Z^\top(Z\Omega)\right)
+		= C\Omega + \Delta Y.
+	\]
+	Then, under the standard inner-product rounding model with accumulation
+	in precision \(u\),
+	\[
+		\|\Delta Y\|_2
+		\le
+		\frac{n u}{1 - n u}\;\frac{\|Z\|_2^2}{n}\;\|\Omega\|_2,
+	\]
+	provided that \(n u < 1\). In particular, writing
+	\(\eta_{\mathrm{fp}} = \|\Delta Y\|_2 / \|\Omega\|_2\), one obtains
+	the operator-norm estimate
+	\[
+		\eta_{\mathrm{fp}}
+		\lesssim
+		u\,\|Z\|_2^2
+		=
+		u\,\sigma_1^2(C)\,n,
+	\]
+	so that the floating-point perturbation scales with the unit roundoff and
+	the squared spectral norm of the data.
+\end{proposition}
+
+\begin{proof}
+	This is a direct application of the standard matrix-product rounding model
+	\cite[Thm.~3.5]{higham2022mixed}. Each column of
+	\(\frac{1}{n}Z^\top(Z\Omega)\) is an inner product of length \(n\),
+	so the columnwise relative perturbation is bounded by \(\gamma_n = nu/(1-nu)\).
+	Taking norms and using \(\|C\|_2 = \|Z\|_2^2/n\) gives the result.
+\end{proof}
+
+The practical content of \Cref{prop:cov_sketch_perturbation} is that the floating-point contribution to the covariance sketch perturbation is computable from the data norms, the accumulation length, and the unit roundoff alone. The balanced regime
+\[
+	\eta_{\mathrm{fp}} \lesssim \eta_{\mathrm{rand}}
+\]
+can therefore be tested before committing to a precision choice, by comparing \(\eta_{\mathrm{fp}}\) against a randomized truncation error estimate (e.g.\ from a range-finder residual).
+
 \section{Perturbation Perspective}
 
 The central analytical task is not to study the entire bias-correction workflow at once, but to bound the perturbation of the transport map induced by the covariance approximation. Define
