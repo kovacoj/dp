@@ -88,6 +88,17 @@
       letter-spacing: 0.01em;
     }
 
+    button.tag {
+      cursor: pointer;
+      font: inherit;
+    }
+
+    button.tag.is-active {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
     .section {
       padding: 18px 0 56px;
     }
@@ -128,6 +139,45 @@
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.03em;
+    }
+
+    .badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 0 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      border: 1px solid transparent;
+    }
+
+    .badge--done {
+      background: #e8f7ee;
+      color: #0f7a36;
+      border-color: #b9e6c7;
+    }
+
+    .badge--progress {
+      background: #fff6db;
+      color: #9a6a00;
+      border-color: #f0d58b;
+    }
+
+    .badge--topic {
+      background: #f0f3f9;
+      color: #566273;
+      border-color: #d8dee9;
+      text-transform: none;
+      letter-spacing: 0.01em;
     }
 
     .card h3 {
@@ -193,6 +243,10 @@
       font-size: 14px;
     }
 
+    .hidden {
+      display: none !important;
+    }
+
     code {
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
       font-size: 0.95em;
@@ -217,28 +271,36 @@
   <div class="wrap">
     <header class="hero">
       <h1>Statistical Post-processing of Multidimensional Climate Data</h1>
-      <div class="tag-row" aria-label="Research topics">
-        <span class="tag">randomized numerical linear algebra</span>
-        <span class="tag">mixed precision</span>
-        <span class="tag">covariance transport</span>
-        <span class="tag">multivariate bias correction</span>
-        <span class="tag">climate-model post-processing</span>
+      <div class="tag-row" aria-label="Research topics and filters">
+        <button class="tag" type="button" data-filter="all">all</button>
+        <button class="tag" type="button" data-filter="randnla">randNLA</button>
+        <button class="tag" type="button" data-filter="mixed-precision">mixed precision</button>
+        <button class="tag" type="button" data-filter="covariance-transport">covariance transport</button>
+        <button class="tag" type="button" data-filter="bias-correction">bias correction</button>
+        <button class="tag" type="button" data-filter="attention">attention</button>
+        <button class="tag" type="button" data-filter="climate">climate</button>
       </div>
     </header>
 
     <section class="section">
       <h2>Main manuscript</h2>
       <div class="grid">
-        <article class="card card--featured">
+        <article class="card card--featured" data-tags="randnla mixed-precision climate bias-correction">
           <div class="meta">
             <span>Diploma Thesis</span>
             <span>Latest PDF</span>
             <span>Charles University</span>
           </div>
+          <div class="badges">
+            <span class="badge badge--progress">in progress</span>
+            <span class="badge badge--topic">randNLA</span>
+            <span class="badge badge--topic">mixed precision</span>
+            <span class="badge badge--topic">climate</span>
+            <span class="badge badge--topic">bias correction</span>
+          </div>
           <h3>Statistical Post-processing of Multidimensional Climate Data</h3>
           <p>
-            The main manuscript on randomized numerical linear algebra, mixed precision, and multivariate climate-model
-            post-processing. This is the primary long-form document and the current reference version for the project.
+            Main manuscript for the diploma thesis.
           </p>
           <div class="actions">
             <a class="button button--primary" href="./thesis.pdf">Open thesis PDF</a>
@@ -251,32 +313,40 @@
     <section class="section">
       <h2>Intermezzo papers and notes</h2>
       <div class="grid">
-        <article class="card">
+        <article class="card" data-tags="randnla mixed-precision covariance-transport bias-correction climate">
           <div class="meta">
             <span>Supervisor Note</span>
             <span>randMBC</span>
           </div>
+          <div class="badges">
+            <span class="badge badge--done">done</span>
+            <span class="badge badge--topic">randNLA</span>
+            <span class="badge badge--topic">mixed precision</span>
+            <span class="badge badge--topic">covariance transport</span>
+            <span class="badge badge--topic">bias correction</span>
+            <span class="badge badge--topic">climate</span>
+          </div>
           <h3>Randomized Covariance Transport for Multivariate Bias Correction</h3>
-          <p>
-            A standalone project note on low-rank and mixed-precision covariance transport for multivariate bias correction.
-            Intended as an intermediate write-up that can later be folded back into the thesis.
-          </p>
+          <p>Focused note on low-rank covariance transport for multivariate bias correction.</p>
           <div class="actions">
             <a class="button button--primary" href="./papers/randmbc-note.pdf">Open note PDF</a>
           </div>
         </article>
 
-        <article class="card">
+        <article class="card" data-tags="randnla mixed-precision attention">
           <div class="meta">
             <span>Course Paper</span>
             <span>Attention</span>
             <span>Hosted in attention repo</span>
           </div>
+          <div class="badges">
+            <span class="badge badge--done">done</span>
+            <span class="badge badge--topic">randNLA</span>
+            <span class="badge badge--topic">mixed precision</span>
+            <span class="badge badge--topic">attention</span>
+          </div>
           <h3>Mixed-Precision Randomized Sketching for Scaled Dot-Product Attention</h3>
-          <p>
-            A short paper on feature sketching and finite-precision effects in scaled dot-product attention. The PDF is hosted
-            directly from the dedicated <code>attention</code> repository.
-          </p>
+          <p>Short paper on feature sketching and finite-precision effects in attention.</p>
           <div class="actions">
             <a class="button button--primary" href="https://kovacoj.github.io/attention/report.pdf">Open paper PDF</a>
             <a class="button button--secondary" href="https://github.com/kovacoj/attention">Browse repository</a>
@@ -297,5 +367,27 @@
     </section>
 
   </div>
+  <script>
+    const filterButtons = Array.from(document.querySelectorAll('[data-filter]'));
+    const cards = Array.from(document.querySelectorAll('[data-tags]'));
+
+    function applyFilter(filter) {
+      filterButtons.forEach((button) => {
+        button.classList.toggle('is-active', button.dataset.filter === filter);
+      });
+
+      cards.forEach((card) => {
+        const tags = card.dataset.tags.split(/\s+/);
+        const visible = filter === 'all' || tags.includes(filter);
+        card.classList.toggle('hidden', !visible);
+      });
+    }
+
+    filterButtons.forEach((button) => {
+      button.addEventListener('click', () => applyFilter(button.dataset.filter));
+    });
+
+    applyFilter('all');
+  </script>
 </body>
 </html>
