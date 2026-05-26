@@ -1,6 +1,6 @@
 # Statistical Post-processing of Multidimensional Climate Data
 
-Diploma thesis by **Bc. Jan Kovacovsky** at **Charles University**.
+Diploma thesis by **Bc. Ján Kovačovský** at **Charles University**.
 
 [Read the latest compiled PDF](./thesis.pdf)
 
@@ -13,9 +13,9 @@ Diploma thesis by **Bc. Jan Kovacovsky** at **Charles University**.
 | Thesis type | Diploma thesis |
 | Academic year | 2025/2026 |
 | Institute | Katedra fyziky atmosfery (115 - 32-KFA) |
-| Supervisor | doc. Mgr. Jiri Mikovsky, Ph.D. |
+| Supervisor | doc. Mgr. Jiří Mikšovský, Ph.D. |
 | Consultant | doc. RNDr. Eva Holtanova, Ph.D. |
-| Student | Bc. Jan Kovacovsky |
+| Student | Bc. Ján Kovačovský |
 
 ## Keywords
 
