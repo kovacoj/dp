@@ -248,6 +248,63 @@ of the regularization tradeoff in covariance transport. Increasing \(\lambda\)
 improves stability of the inverse square root, but it also changes the operator that
 is being transported.
 
+\section{Subspace Embeddings and Dimensionality Reduction}
+
+The idea of replacing a large least-squares problem by a smaller one rests on a
+geometric requirement: the sketching matrix should approximately preserve norms
+and angles on the relevant subspace. This requirement is captured by the notion
+of an oblivious subspace embedding (OSE).
+
+\begin{definition}[Oblivious Subspace Embedding]
+	\label{def:ose_background}
+	Let \(\varepsilon \in (0,1)\) and \(\delta \in (0,1)\). A distribution
+	\(\mathcal{S}\) over \(\R^{s \times n}\) is a \((d,\varepsilon,\delta)\)-OSE
+	if, for every fixed subspace \(\mathcal{V} \subseteq \R^n\) of dimension at
+	most \(d\),
+	\[
+		\Pr_{S \sim \mathcal{S}}\!\Bigl[\,\forall\, v \in \mathcal{V}:\;
+			(1-\varepsilon)\|v\|_2^2 \le \|Sv\|_2^2 \le
+			(1+\varepsilon)\|v\|_2^2\Bigr] \ge 1 - \delta.
+	\]
+\end{definition}
+
+The squared-norm convention is natural because it is equivalent to controlling
+the spectral norm of the Gram distortion \(U^\top S^\top S U - I\) on an
+orthonormal basis \(U\) of the embedded subspace. It immediately implies
+\(\sqrt{1-\varepsilon}\,\|v\|_2 \le \|Sv\|_2 \le \sqrt{1+\varepsilon}\,\|v\|_2\).
+
+The OSE property is a uniform Johnson--Lindenstrauss statement on subspaces.
+The Johnson--Lindenstrauss lemma itself provides the foundational concentration
+result for finite point sets:
+
+\begin{lemma}[Johnson--Lindenstrauss]
+	\label{lem:jl_background}
+	Let \(\varepsilon \in (0,1)\) and let \(\mathcal{P}\) be a finite set of
+	\(p\) points in \(\R^n\). If \(S \in \R^{s \times n}\) has entries drawn
+	independently from \(\mathcal{N}(0,1/s)\) and
+	\[
+		s \ge \frac{C\log p}{\varepsilon^2},
+	\]
+	then with probability at least \(1 - 1/p\),
+	\[
+		(1-\varepsilon)\|u - v\|_2^2 \le \|S(u-v)\|_2^2 \le
+		(1+\varepsilon)\|u - v\|_2^2
+	\]
+	for every pair \(u,v \in \mathcal{P}\).
+\end{lemma}
+
+The passage from pointwise concentration (JL) to uniform subspace control (OSE)
+proceeds by a net argument: a \(\gamma\)-net of the unit ball in a
+\(d\)-dimensional subspace has cardinality at most \((3/\gamma)^d\); applying JL
+to this net and using the Lipschitz continuity of the sketching operator yields
+the subspace embedding property.
+
+These definitions are used extensively in \Cref{ch:randls}, where specific
+sketch families (Gaussian, Rademacher, SRHT) are shown to satisfy the OSE
+condition with concrete sketch-size bounds. The present section merely fixes the
+geometric language; the algorithmic and probabilistic details belong to the
+specialized chapters.
+
 \section{Why This Background Matters}
 
 These spectral facts extend the least-squares viewpoint from compressed
