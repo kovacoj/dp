@@ -105,12 +105,11 @@ jobs:
           cp paper-artifact/paper.pdf pages-branch/papers/randmbc-note.pdf
           cp repo/pages/index.html pages-branch/index.html
           cp repo/pages/.nojekyll pages-branch/.nojekyll
-          rm -f pages-branch/index.md pages-branch/_config.yml
           cd pages-branch
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add thesis.pdf papers/randmbc-note.pdf index.html .nojekyll
           git rm -f index.md _config.yml || true
+          git add -A thesis.pdf papers/randmbc-note.pdf index.html .nojekyll
           if git diff --cached --quiet; then
             echo "No changes to deploy"
           else
