@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Jan Kovacovsky | Thesis and Research Notes</title>
+  <meta name="description" content="Diploma thesis and supporting research notes on randomized numerical linear algebra, mixed precision, and climate-model post-processing.">
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f7fb;
+      --surface: #ffffff;
+      --text: #18202a;
+      --muted: #5d6877;
+      --line: #d8dee9;
+      --accent: #2457c5;
+      --accent-soft: #e8efff;
+      --shadow: 0 18px 40px rgba(24, 32, 42, 0.08);
+      --radius: 18px;
+      --max: 1080px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(180deg, #eef3ff 0%, var(--bg) 180px, var(--bg) 100%);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    a { color: inherit; }
+
+    .wrap {
+      width: min(calc(100% - 32px), var(--max));
+      margin: 0 auto;
+    }
+
+    .hero {
+      padding: 72px 0 36px;
+    }
+
+    .eyebrow {
+      display: inline-block;
+      margin-bottom: 16px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0 0 14px;
+      font-size: clamp(34px, 5vw, 56px);
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+    }
+
+    .lead {
+      max-width: 760px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    .section {
+      padding: 18px 0 56px;
+    }
+
+    .section h2 {
+      margin: 0 0 18px;
+      font-size: 22px;
+      letter-spacing: -0.02em;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding: 24px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .card--featured {
+      grid-column: span 2;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .card h3 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+    }
+
+    .card p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: auto;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      padding: 0 16px;
+      border-radius: 12px;
+      text-decoration: none;
+      font-weight: 700;
+      transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+    }
+
+    .button:hover {
+      transform: translateY(-1px);
+    }
+
+    .button--primary {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 10px 20px rgba(36, 87, 197, 0.22);
+    }
+
+    .button--secondary {
+      background: #fff;
+      color: var(--text);
+      border: 1px solid var(--line);
+    }
+
+    .notes {
+      display: grid;
+      gap: 14px;
+      padding: 22px 24px;
+      border-radius: var(--radius);
+      border: 1px dashed #c7d3ea;
+      background: rgba(255, 255, 255, 0.72);
+      color: var(--muted);
+    }
+
+    .footer {
+      padding: 12px 0 48px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 0.95em;
+    }
+
+    @media (max-width: 760px) {
+      .hero {
+        padding-top: 52px;
+      }
+
+      .card--featured {
+        grid-column: span 1;
+      }
+
+      .lead {
+        font-size: 17px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="hero">
+      <div class="eyebrow">Research Workspace</div>
+      <h1>Thesis manuscript and intermezzo papers in one place.</h1>
+      <p class="lead">
+        This site collects the current diploma thesis and shorter project notes around randomized numerical linear algebra,
+        mixed-precision computation, and climate-model post-processing. The thesis remains the main document; the notes are
+        intermediate checkpoints meant to share focused findings earlier.
+      </p>
+    </header>
+
+    <section class="section">
+      <h2>Main manuscript</h2>
+      <div class="grid">
+        <article class="card card--featured">
+          <div class="meta">
+            <span>Diploma Thesis</span>
+            <span>Latest PDF</span>
+            <span>Charles University</span>
+          </div>
+          <h3>Statistical Post-processing of Multidimensional Climate Data</h3>
+          <p>
+            The main manuscript on randomized numerical linear algebra, mixed precision, and multivariate climate-model
+            post-processing. This is the primary long-form document and the current reference version for the project.
+          </p>
+          <div class="actions">
+            <a class="button button--primary" href="./thesis.pdf">Open thesis PDF</a>
+            <a class="button button--secondary" href="https://github.com/kovacoj/dp">Browse repository</a>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Intermezzo papers and notes</h2>
+      <div class="grid">
+        <article class="card">
+          <div class="meta">
+            <span>Supervisor Note</span>
+            <span>randMBC</span>
+          </div>
+          <h3>Randomized Covariance Transport for Multivariate Bias Correction</h3>
+          <p>
+            A standalone project note on low-rank and mixed-precision covariance transport for multivariate bias correction.
+            Intended as an intermediate write-up that can later be folded back into the thesis.
+          </p>
+          <div class="actions">
+            <a class="button button--primary" href="./papers/randmbc-note.pdf">Open note PDF</a>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="notes">
+        <strong>Repository note</strong>
+        <span>
+          The PDFs published here are generated from the <code>main</code> branch of
+          <a href="https://github.com/kovacoj/dp">kovacoj/dp</a>. The shorter notes are intentionally separate from the thesis so
+          they can be shared earlier without changing the thesis structure itself.
+        </span>
+      </div>
+    </section>
+
+    <footer class="footer">
+      Jan Kovacovsky · GitHub Pages workspace for thesis and supporting papers
+    </footer>
+  </div>
+</body>
+</html>
