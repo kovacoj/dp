@@ -67,6 +67,27 @@
       font-size: 18px;
     }
 
+    .tag-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 0 12px;
+      border-radius: 999px;
+      border: 1px solid #cfd8ea;
+      background: rgba(255, 255, 255, 0.84);
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+
     .section {
       padding: 18px 0 56px;
     }
@@ -196,10 +217,13 @@
   <div class="wrap">
     <header class="hero">
       <h1>Statistical Post-processing of Multidimensional Climate Data</h1>
-      <p class="lead">
-        This site collects the current diploma thesis and shorter project notes around randomized numerical linear algebra,
-        mixed-precision computation, and climate-model post-processing.
-      </p>
+      <div class="tag-row" aria-label="Research topics">
+        <span class="tag">randomized numerical linear algebra</span>
+        <span class="tag">mixed precision</span>
+        <span class="tag">covariance transport</span>
+        <span class="tag">multivariate bias correction</span>
+        <span class="tag">climate-model post-processing</span>
+      </div>
     </header>
 
     <section class="section">
