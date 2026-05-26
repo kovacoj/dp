@@ -53,7 +53,7 @@ The dependence-correction step is then represented by the regularized transport 
 \[
 	T_\lambda = (C_X + \lambda I)^{-1/2}(C_Y + \lambda I)^{1/2},
 \]
-where \(\lambda > 0\) is a regularization parameter.
+where \(\lambda > 0\) is a regularization parameter.  In the language of optimal transport, this is a \emph{regularized whitening--coloring covariance transport}: the map first whitens the source covariance (inverse square root) and then colors the result with the target covariance (square root).  It coincides with the Bures--Wasserstein optimal-transport map when \(C_X\) and \(C_Y\) commute, but in general it is not the symmetric optimal-transport map.  The present thesis adopts it primarily for its algebraic tractability and its natural connection to matrix-function perturbation theory, not as a claim of optimality in the transport sense.
 
 The role of \(\lambda\) is both numerical and conceptual. Numerically, it keeps the source and target operators strictly positive definite and prevents the inverse square root from reacting catastrophically to small singular values or nearly redundant variables. Conceptually, it acknowledges that in high-dimensional post-processing tasks one should not insist on recovering dependence structure below the scale at which the empirical covariance is already poorly determined.
 

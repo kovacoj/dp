@@ -89,6 +89,54 @@ rand_cov_approx <- function(
     )
 }
 
+#' Randomized low-rank covariance approximation (precision-model interface)
+#'
+#' Same algorithm as \code{\link{rand_cov_approx}}, but accepts a
+#' \code{randMBC_precision} object instead of raw format strings.  This is the
+#' preferred entry point for new experiment code.
+#'
+#' @param Z Numeric matrix whose rows are samples and whose columns are latent
+#'   features.
+#' @param rank Target approximation rank.
+#' @param oversampling Oversampling parameter added to the target rank before
+#'   range finding.
+#' @param sketch Sketch distribution used to draw the sampling matrix.
+#' @param pm A \code{randMBC_precision} object created by
+#'   \code{\link{precision_model}}.
+#' @param lambda Nonnegative ridge parameter added to the returned covariance
+#'   surrogate.
+#'
+#' @return A list with the same elements as \code{\link{rand_cov_approx}},
+#'   plus a \code{precision_model} field.
+#' @examples
+#' pm <- precision_model("single", "double")
+#' set.seed(1)
+#' z <- matrix(rnorm(80), nrow = 20, ncol = 4)
+#' fit <- rand_cov_approx_pm(z, rank = 2, oversampling = 1, pm = pm)
+#' fit$rank
+#' @export
+rand_cov_approx_pm <- function(
+    Z,
+    rank = 20L,
+    oversampling = 10L,
+    sketch = c("gaussian", "rademacher"),
+    pm,
+    lambda = 1e-6
+) {
+    if (!inherits(pm, "randMBC_precision")) {
+        stop("pm must be a randMBC_precision object from precision_model()")
+    }
+    rand_cov_approx(
+        Z = Z,
+        rank = rank,
+        oversampling = oversampling,
+        sketch = sketch,
+        mult_prec = pm$sketch_prec,
+        orth_prec = pm$orth_prec,
+        lambda = lambda
+    )
+}
+
 #' Draw a randomized sketch matrix
 #'
 #' @param p Number of rows in the sketching operator.

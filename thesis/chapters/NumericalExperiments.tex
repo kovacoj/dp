@@ -269,6 +269,48 @@ effect one is trying to detect. For the later experimental chapter, this means t
 precision sweeps should be read only after the rank and regularization regime has
 been pushed into a range where randomized approximation is already credible.
 
+\section{Regime-Identification Table}
+
+The experimental program described above naturally separates into three parameter
+regimes, each with a distinct limiting factor.  Table~\ref{tab:regimes}
+summarizes the qualitative expectations for each regime.  The boundaries are not
+sharp; they depend on the spectral decay of the covariance operators and on the
+choice of \(\lambda\).  The purpose of the table is to make the regime structure
+explicit so that later experimental results can be read as regime-identification
+findings rather than as undifferentiated success-or-failure verdicts.
+
+\begin{table}[t]
+	\centering
+	\caption{Qualitative regime structure for randomized covariance-transport
+		experiments.  ``Full baseline'' denotes deterministic full covariance transport.
+		``Randomized transport'' denotes the low-rank surrogate.  ``Mixed precision
+		visible?'' asks whether reducing precision in the sketch products produces a
+		noticeable change relative to double-precision randomized transport.}
+	\label{tab:regimes}
+	\begin{tabular}{lccc}
+		\toprule
+		Regime                                    & Full baseline & Randomized transport & Mixed precision visible? \\
+		\midrule
+		Fast spectral decay, moderate \(\lambda\) & good          & promising            & not dominant             \\
+		Flat spectrum, small \(\lambda\)          & good          & unstable             & hidden by truncation     \\
+		Shared basis, adequate \(\lambda\)        & good          & improved             & to test                  \\
+		Independent basis                         & weaker        & unstable             & not decisive             \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+The first row reflects the most favorable setting: the covariance operators have
+rapidly decaying spectra, so a modest rank captures most of the variance, and
+regularization is generous enough to keep the inverse-square-root amplification
+controlled.  The second row is the least favorable: flat spectra and weak
+regularization make the low-rank surrogate unreliable, and precision effects
+are invisible because the approximation error already dominates.  The third row
+is the target regime identified by the shared-basis construction in
+\Cref{ch:randcovtransport}: using one reduced coordinate system for both
+operators stabilizes the transport map even when the raw covariance error is
+only marginally different.  The fourth row serves as the diagnostic baseline
+for comparison.
+
 \section{Application-Facing Diagnostics}
 
 Once the covariance-transport experiments are connected to a climate-shaped data

@@ -1,0 +1,30 @@
+\name{rand_cov_approx_pm}
+\alias{rand_cov_approx_pm}
+\title{Randomized low-rank covariance approximation (precision-model interface)}
+\description{Same algorithm as \code{\link{rand_cov_approx}}, but accepts a \code{randMBC_precision} object instead of raw format strings. This is the preferred entry point for new experiment code.}
+\usage{
+rand_cov_approx_pm(
+  Z,
+  rank = 20L,
+  oversampling = 10L,
+  sketch = c("gaussian", "rademacher"),
+  pm,
+  lambda = 1e-6
+)
+}
+\arguments{
+  \item{Z}{Numeric matrix whose rows are samples and whose columns are latent features.}
+  \item{rank}{Target approximation rank.}
+  \item{oversampling}{Oversampling parameter added to the target rank before range finding.}
+  \item{sketch}{Sketch distribution used to draw the sampling matrix.}
+  \item{pm}{A \code{randMBC_precision} object created by \code{\link{precision_model}}.}
+  \item{lambda}{Nonnegative ridge parameter added to the returned covariance surrogate.}
+}
+\value{A list with the same elements as \code{\link{rand_cov_approx}}, plus a \code{precision_model} field.}
+\examples{
+pm <- precision_model("single", "double")
+set.seed(1)
+z <- matrix(rnorm(80), nrow = 20, ncol = 4)
+fit <- rand_cov_approx_pm(z, rank = 2, oversampling = 1, pm = pm)
+fit$rank
+}

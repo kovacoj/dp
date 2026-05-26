@@ -45,6 +45,54 @@ theoretical examples remain useful in a more realistic workflow. The outcome nee
 not be a pure speedup. Reduced memory use, acceptable lower-precision behavior,
 or a clearer picture of failure regimes are also valuable results.
 
+\section*{Main Contribution}
+
+The thesis advances three interlocking contributions.
+
+\begin{enumerate}
+	\item \textbf{Perturbation analysis for regularized covariance transport.}
+	      We give deterministic first-order bounds for the perturbation of the
+	      regularized transport map
+	      \(T_\lambda = (C_X + \lambda I)^{-1/2}(C_Y + \lambda I)^{1/2}\)
+	      under additive disturbances to the source and target covariance operators.
+	      The bounds make explicit how the inverse-square-root amplification factor
+	      \(K_\lambda(C_X,C_Y)\) depends on the regularized spectral gap, and they
+	      apply whether the perturbations arise from randomized low-rank compression,
+	      floating-point arithmetic, or both.
+
+	\item \textbf{Randomized low-rank approximation and mixed-precision error
+		      decomposition.}
+	      We decompose the total covariance perturbation into a randomized
+	      truncation term governed by the spectral tail beyond the chosen rank,
+	      and a floating-point term governed by the unit roundoff, the accumulation
+	      length, and the norm of the sketching operator.  This decomposition is
+	      the natural quantitative setting for the balancing-inexactness principle:
+	      mixed precision is safe only while \(\|E_{\mathrm{fp}}\| \lesssim
+	      \|E_{\mathrm{rand}}\|\), and the regime boundary is computable from the
+	      rank, the oversampling, and the spectrum of the covariance operator.
+
+	\item \textbf{Synthetic and climate-shaped experiments identifying rank,
+		      regularization, and precision regimes.}
+	      We design experiments that vary the approximation rank, the
+	      regularization level~\(\lambda\), and the working precision in the sketch
+	      products, while tracking covariance error, transport-map error, and the
+	      induced dependence error on corrected future data.  The experiments
+	      distinguish three regimes: an approximation-dominated regime in which
+	      lower precision is hidden beneath truncation error, a
+	      regularization-dominated regime in which transport instability is the
+	      bottleneck, and a precision-visible regime in which floating-point error
+	      overtakes the randomized approximation.  Negative or inconclusive
+	      randomized results are framed as controlled regime-identification findings
+	      rather than as failed speedup attempts.
+\end{enumerate}
+
+Taken together, these contributions turn the experimental observation that
+randomized covariance transport is numerically viable only in certain parameter
+regimes into a coherent thesis-level claim: the regime boundary is predictable
+from the spectral structure of the covariance operators and the regularization
+parameter, and mixed precision is safe only inside the approximation-dominated
+sub-regime.
+
 The structure of the thesis is as follows. The preliminary chapters fix notation and
 collect the basic mathematical material. The next chapters discuss mixed
 precision and randomized least squares in more detail, first as model problems
