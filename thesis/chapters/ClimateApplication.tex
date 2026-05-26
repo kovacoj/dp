@@ -2,8 +2,8 @@
 
 This chapter connects the mathematical and numerical parts of the thesis to a
 climate-model workflow. Its purpose is not to change the main topic of the thesis,
-but to test whether the methods studied in the previous chapters remain useful in
-a realistic downstream task.
+but to test whether the methods studied in the previous chapters remain useful in a
+realistic downstream task.
 
 In this setting, we no longer work only with synthetic matrices whose properties we
 control directly. The relevant operators come from the statistical post-processing
@@ -42,7 +42,10 @@ approaches such as R2D2 extend the same line of thought to higher-dimensional
 dependence adjustment \cite{vrac2015ecbc,vrac2018r2d2}. At the same time, the
 climate literature emphasizes that bias correction should not be treated as a
 black-box distributional repair detached from physical interpretation or dynamical
-structure \cite{maraun2016biasreview}.
+structure \cite{maraun2016biasreview}. Recent comparative studies
+\cite{francois2020multivariate} have made this point quantitatively: different
+multivariate methods preserve different aspects of the joint distribution, and no
+single method dominates across all dependence metrics.
 
 \section{Marginals and Dependence}
 
@@ -63,55 +66,257 @@ way, the application chapter stays tied to multivariate climate post-processing
 without forcing the entire theory to become a direct analysis of a fully nonlinear
 bias-correction algorithm.
 
+\section{Data}
+
+The application uses the CCCma dataset distributed with the R package
+\texttt{MBC} \cite{cannon2020mbcpackage}. This dataset contains daily values of
+precipitation, temperature, and sea-level pressure from the Canadian Centre for
+Climate Modelling and Analysis (CCCma) global climate model, together with a
+corresponding observational reference. The data are organized into a historical
+calibration period and a future projection period, which is precisely the structure
+required by the bias-correction workflow:
+\[
+	X_h \in \R^{n \times p}, \qquad X_f \in \R^{m \times p}, \qquad Y_h \in \R^{n \times p}.
+\]
+Here the column dimension \(p\) encodes the multivariate state. In the simplest
+configuration, each column corresponds to a single physical variable at a single
+location. More elaborate configurations may concatenate several variables, nearby
+grid points, or lagged features into one multivariate vector, thereby increasing \(p\)
+and making the covariance estimation problem dimensionally harder.
+
+The CCCma dataset is modest in size compared to full CMIP6 archives
+\cite{eyring2016cmip6}, but it has the right structure for a first application-facing
+test: the historical and future periods are already separated, the observational
+reference is provided, and the number of variables is large enough to make a
+low-rank approach potentially interesting. In particular, the dependence between
+precipitation and the thermodynamic variables is known to be poorly captured by
+GCMs, which gives the covariance-transport step a concrete target
+\cite{francois2020multivariate}.
+
+For the present thesis, the dataset is used in two ways. First, it provides the
+real-data input for the full \texttt{randMBC} pipeline. Second, it informs the design
+of the climate-shaped synthetic data used in \Cref{ch:experiments}: the spectral
+profiles and block-dependence structure of the real data are used to calibrate the
+synthetic generators so that the controlled experiments remain application-relevant.
+
 \section{Workflow}
 
-At the method level, the climate-facing procedure should be described by explicit
-inputs and outputs. The input is a triple
-\[
-	X_h,\; X_f,\; Y_h,
-\]
-consisting of historical model data, future model data, and historical reference
-data. The output is a corrected future sample
+At the method level, the climate-facing procedure is described by explicit inputs
+and outputs. The input is the triple \(X_h\), \(X_f\), \(Y_h\) defined above. The
+output is a corrected future sample
 \[
 	X_f^{\mathrm{corr}}
 \]
 that inherits the target marginal behavior together with an adjusted dependence
 structure.
 
-The computational steps are then:
+The computational steps are:
 \begin{enumerate}
-	\item apply QDM-type marginal correction to obtain \(\widetilde X_h\) and
-	      \(\widetilde X_f\),
-	\item transform the calibration and future samples to a latent rank-normal space,
-	\item estimate the calibration covariance operators,
-	\item approximate them by randomized low-rank sketches,
-	\item build the regularized transport map \(T_\lambda\),
-	\item apply the map to the future latent data,
-	\item restore the target marginals by rank rearrangement.
+	\item Apply QDM-type marginal correction to obtain \(\widetilde X_h\) and
+	      \(\widetilde X_f\).
+	\item Transform the corrected calibration and future samples to a latent
+	      rank-normal space via plotting-position ranks and the inverse standard
+	      normal map.
+	\item Estimate the calibration covariance operators
+	      \(C_X = \frac{1}{n} Z_X^\top Z_X\) and
+	      \(C_Y = \frac{1}{n} Z_Y^\top Z_Y\).
+	\item Approximate them by randomized low-rank sketches
+	      \(C_X \approx Q_X B_X Q_X^\top\) and
+	      \(C_Y \approx Q_Y B_Y Q_Y^\top\),
+	      as described in \Cref{ch:randcovtransport}.
+	\item Build the regularized transport map
+	      \(T_\lambda = (C_X + \lambda I)^{-1/2}(C_Y + \lambda I)^{1/2}\)
+	      from the low-rank surrogates.
+	\item Apply the map to the future latent data:
+	      \(Z_f^{\mathrm{corr}} = Z_f T_\lambda\).
+	\item Restore the target marginals by rank rearrangement: for each variable,
+	      sort the QDM-corrected values \(\widetilde X_f(:,j)\) and rearrange
+	      them according to the ranks of \(Z_f^{\mathrm{corr}}(:,j)\).
 \end{enumerate}
 
 This explicit workflow is useful because it makes clear which part of the method is
 meant to carry the numerical linear algebra: the covariance approximation and
-transport layer, not the entire post-processing pipeline at once.
+transport layer (steps 3--6), not the entire post-processing pipeline at once.
+
+The local R package \texttt{randMBC} implements precisely this decomposition. It
+exposes a deterministic marginal-correction and rank-restoration wrapper around a
+randomized covariance-transport core. The main entry point
+\texttt{fit\_rand\_mbc} accepts the data triple together with algorithm parameters
+(rank, oversampling, sketch type, working precision, and regularization), and
+returns the corrected future sample together with operator-level diagnostics
+(covariance error, transport-map error, condition estimates, and runtime).
 
 \section{Randomized Covariance Transport}
 
 The thesis does not propose a universal replacement for methods such as MBCn.
 Its narrower proposal is a covariance-based dependence correction step that can be
-compressed by randomized low-rank approximation and analyzed in mixed
-precision. The attraction of this approach is not only speed. It is also that the
-operator
+compressed by randomized low-rank approximation and analyzed in mixed precision.
+The attraction of this approach is not only speed. It is also that the operator
 \[
 	T_\lambda = (C_X + \lambda I)^{-1/2}(C_Y + \lambda I)^{1/2}
 \]
 has a perturbation structure that can be studied directly in terms of conditioning,
 regularization, randomized approximation error, and floating-point error.
 
+The main theoretical statement from
+\Cref{ch:randcovtransport} shows that, under suitable spectral-gap assumptions,
+the transport perturbation satisfies
+\[
+	\|T_\lambda - \widehat T_\lambda\|_2
+	\lesssim
+	K_\lambda(C_X, C_Y)(\eta_A + \eta_B),
+\]
+where \(\eta_A\) and \(\eta_B\) bound the regularized covariance perturbations and
+\(K_\lambda\) deteriorates as the regularized spectra approach zero. The climate
+application gives this abstract statement a concrete meaning: \(\eta_A\) and
+\(\eta_B\) now reflect the quality of a randomized low-rank approximation to the
+empirical covariance of actual climate data, and the conditioning of the regularized
+transport is determined by the spectral structure of that data.
+
 From the application point of view, the proposal should therefore be interpreted as
 a computationally cheaper and more analyzable dependence-correction layer. It is
 well suited to regimes in which the dominant challenge is to modify covariance-like
 dependence structure in large multivariate states. It is not intended to dominate
 richer multivariate distribution-matching methods in every possible setting.
+
+\section{Experimental Design}
+
+The climate-facing experiments are organized around the same parameter axes as the
+synthetic benchmarks in \Cref{ch:experiments}, but with the real dataset replacing
+the synthetic generators. The decisive sweeps vary the approximation rank,
+the regularization parameter \(\lambda\), and the arithmetic precision, while
+tracking numerical and statistical diagnostics simultaneously.
+
+\subsection{Numerical diagnostics}
+
+On the numerical side, the recorded quantities are:
+\begin{itemize}
+	\item Covariance approximation error
+	      \(\|C - \widehat C\|_2\), separately for source and target.
+	\item Transport-map error
+	      \(\|T_\lambda - \widehat T_\lambda\|_2\).
+	\item Induced future-data perturbation
+	      \(\|Z_f T_\lambda - Z_f \widehat T_\lambda\|_F\).
+	\item Condition number and minimum eigenvalue of the regularized covariance.
+	\item Runtime and peak memory use.
+\end{itemize}
+These are the same diagnostics as in the synthetic benchmark, extended to real
+data. Their role is to determine whether the perturbation bounds from
+\Cref{ch:randcovtransport} remain predictive when the covariance operators are
+no longer controlled by construction.
+
+\subsection{Statistical diagnostics}
+
+On the statistical side, the recorded quantities are:
+\begin{itemize}
+	\item Marginal quantile error at selected quantile levels.
+	\item Pearson and Spearman correlation error between the corrected future
+	      sample and the reference.
+	\item Spatial autocorrelation error when the column dimension encodes
+	      spatial structure.
+	\item Temporal autocorrelation error at selected lags.
+	\item Energy score or similar multivariate discrepancy measure.
+\end{itemize}
+The distinction between the two groups is important. A method may show a visible
+operator perturbation while still producing acceptable application-level
+dependence corrections, or conversely may appear cheap and accurate in low-rank
+terms while failing to preserve the dependence features that matter downstream.
+The experimental design keeps both scales visible.
+
+\subsection{Reference methods}
+
+The randomized covariance-transport method is compared against two reference
+levels. First, the deterministic full covariance-transport baseline, in which the
+regularized transport map is built from the exact empirical covariances without
+randomized compression. Second, selected methods from the vendored \texttt{MBC}
+package, specifically MBCp, MBCr, and MBCn, applied to the same data triple with
+their default parameter settings. These reference runs do not use randomized
+low-rank approximation, but they provide the standard to which the climate
+community would compare any new method.
+
+\subsection{Parameter sweeps}
+
+The main sweeps are:
+\begin{enumerate}
+	\item \textbf{Rank sweep.} Fix \(\lambda = 10^{-2}\) and double precision; vary
+	      the target rank from small values up to the full column dimension \(p\).
+	      This tests how quickly the covariance approximation error decreases and
+	      whether the transport error follows the prediction of
+	      \Cref{ch:randcovtransport}.
+	\item \textbf{Regularization sweep.} Fix the rank at a moderately large value
+	      and double precision; vary \(\lambda\) from \(10^{-6}\) to
+	      \(10^{-1}\). This tests how strongly the inverse-square-root
+	      conditioning affects the transport error and the downstream
+	      statistical diagnostics.
+	\item \textbf{Precision sweep.} Fix the rank and \(\lambda\); compare double
+	      and single precision in the sketch products. This is the direct test of
+	      the balancing-inexactness principle from \Cref{ch:mixedprecision}: does
+	      single precision remain acceptable because randomized truncation already
+	      dominates, or does arithmetic error become visible?
+	\item \textbf{Basis-mode comparison.} For the same rank, \(\lambda\), and
+	      precision, compare the independent-subspace and joint-basis variants
+	      described in \Cref{ch:randcovtransport}. The synthetic benchmark
+	      already showed that the joint basis can dramatically reduce transport
+	      error; the climate experiment tests whether this advantage survives on
+	      real covariance operators.
+\end{enumerate}
+
+\section{Results Framework}
+
+At the present stage of writing, the climate-facing experiments have been designed
+and the software infrastructure is in place, but the full numerical results are not
+yet available. The following describes the expected structure of the results and the
+interpretive framework within which they should be read.
+
+\subsection{Expected rank--error behavior}
+
+If the empirical covariance operators of the climate data exhibit spectral decay
+--- as one would expect for spatially correlated fields --- then increasing the
+approximation rank should systematically reduce the covariance error. The transport
+error should follow, but with the amplification predicted by \(K_\lambda\). In
+particular, if the regularized minimum eigenvalue remains well above machine
+precision, the transport error should decrease at a rate similar to the covariance
+error, up to the conditioning constant. If the regularization is too weak, the
+inverse square root will amplify the covariance perturbation, and the transport
+error may remain large even when the covariance error is already small.
+
+\subsection{Expected precision behavior}
+
+In the regime where randomized truncation error dominates arithmetic error, double
+and single precision should produce nearly identical results. This is the balanced
+regime
+\[
+	\eta_{\mathrm{fp}} \lesssim \eta_{\mathrm{rand}},
+\]
+advocated in \Cref{ch:mixedprecision}. As the rank increases and the approximation
+error decreases, a crossover point should appear beyond which single precision
+degrades the result. The location of this crossover depends on the spectral decay
+and on the regularization: stronger regularization moves the crossover to larger
+ranks because it keeps the inverse square root in a less sensitive regime.
+
+\subsection{Expected comparison with MBC methods}
+
+The deterministic full covariance-transport baseline is expected to produce
+reasonable dependence corrections on the CCCma data, since the method is
+mathematically well-defined whenever the regularized covariance is positive
+definite. The comparison with MBCp, MBCr, and MBCn is less predictable a priori.
+MBCn, in particular, targets the full multivariate distribution and may outperform
+the covariance-transport method on dependence metrics that go beyond second-order
+structure. The value of the comparison is not to claim overall superiority, but to
+identify which aspects of the dependence correction the covariance-transport layer
+captures well and which it misses.
+
+\subsection{Interpretation}
+
+The results should be interpreted along the lines already established in the
+synthetic benchmark. If the randomized low-rank method produces transport errors
+that are small relative to the statistical variability of the data, then the
+computational savings are well motivated. If the transport errors are large but the
+downstream statistical diagnostics remain acceptable, then the operator-norm
+viewpoint is too strict and the application provides a meaningful relaxation. If
+both the operator perturbation and the statistical diagnostics are poor, then the
+approximation regime itself is the bottleneck, and precision considerations are
+secondary until the rank and regularization are brought into a workable range.
 
 \section{Validation Questions}
 
@@ -122,24 +327,27 @@ needed to keep the inverse square root in a benign regime? The second level is
 statistical: after the dependence correction is pushed back to the climate data,
 which marginal and multivariate features are preserved, improved, or degraded?
 
-The validation metrics should therefore also be split into two groups. On the
-numerical side, the natural quantities are covariance error, transport-map error,
-runtime, and memory use. On the statistical side, the natural quantities are
-marginal quantile error, Pearson and Spearman correlation error, spatial
-correlation error, temporal autocorrelation error, and a multivariate discrepancy
-measure such as the energy score.
-
-These questions are deliberately broader than raw runtime. Reduced memory use,
-stable lower-precision behavior, and a clearer map of failure regimes are all valid
-outcomes. In a realistic post-processing workflow, understanding when the method
-fails is often as valuable as demonstrating a speedup.
+The validation metrics are therefore split into two groups, as described in the
+experimental design above. These questions are deliberately broader than raw
+runtime. Reduced memory use, stable lower-precision behavior, and a clearer map of
+failure regimes are all valid outcomes. In a realistic post-processing workflow,
+understanding when the method fails is often as valuable as demonstrating a
+speedup.
 
 \section{Limitations}
 
 The limitations should be stated plainly. Covariance transport captures only one
 layer of multivariate structure. It does not by itself represent every nonlinear,
-tail-dependent, or temporally structured feature that a richer bias-correction method
-might target. It is therefore best viewed as a deliberately focused numerical core:
-a dependence-correction operator that is rich enough to be climate-relevant, but
-structured enough to admit randomized low-rank approximation and mixed-
-precision perturbation analysis.
+tail-dependent, or temporally structured feature that a richer bias-correction
+method might target. It is therefore best viewed as a deliberately focused
+numerical core: a dependence-correction operator that is rich enough to be
+climate-relevant, but structured enough to admit randomized low-rank approximation
+and mixed-precision perturbation analysis.
+
+A further limitation concerns the dataset. The CCCma data included with the
+\texttt{MBC} package is a useful first test, but it is small by the standards of
+current CMIP6 archives. Whether the computational advantages of the randomized
+approach become decisive at larger scales remains an open question that this thesis
+does not resolve. The present chapter should be read as a proof of concept for the
+transfer of the mathematical framework to real data, not as a definitive
+application study.

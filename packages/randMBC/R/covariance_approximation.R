@@ -1,3 +1,28 @@
+#' Randomized low-rank covariance approximation
+#'
+#' Approximates the covariance of a latent data matrix with a randomized range
+#' finder and returns a regularized low-rank surrogate.
+#'
+#' @param Z Numeric matrix whose rows are samples and whose columns are latent
+#'   features.
+#' @param rank Target approximation rank.
+#' @param oversampling Oversampling parameter added to the target rank before
+#'   range finding.
+#' @param sketch Sketch distribution used to draw the sampling matrix.
+#' @param mult_prec Simulated precision used in the covariance-action products.
+#' @param orth_prec Simulated precision used before orthogonalization.
+#' @param lambda Nonnegative ridge parameter added to the returned covariance
+#'   surrogate.
+#'
+#' @return A list containing the sampled range basis `Q`, the projected core
+#'   matrix `B`, the regularized covariance approximation, and basic
+#'   diagnostics.
+#' @examples
+#' set.seed(1)
+#' z <- matrix(rnorm(80), nrow = 20, ncol = 4)
+#' fit <- rand_cov_approx(z, rank = 2, oversampling = 1)
+#' fit$rank
+#' @export
 rand_cov_approx <- function(
     Z,
     rank = 20L,
@@ -64,6 +89,14 @@ rand_cov_approx <- function(
     )
 }
 
+#' Draw a randomized sketch matrix
+#'
+#' @param p Number of rows in the sketching operator.
+#' @param ell Number of columns in the sketching operator.
+#' @param sketch Sketch distribution name.
+#'
+#' @return A numeric matrix of dimension `p x ell`.
+#' @noRd
 draw_sketch_matrix <- function(p, ell, sketch) {
     switch(
         sketch,
@@ -72,10 +105,24 @@ draw_sketch_matrix <- function(p, ell, sketch) {
     )
 }
 
+#' Apply a covariance operator without materializing it
+#'
+#' @param Z Data matrix whose empirical covariance defines the operator.
+#' @param rhs Right-hand side matrix or vector.
+#'
+#' @return The product `(Z' Z / n) rhs`.
+#' @noRd
 covariance_action <- function(Z, rhs) {
     crossprod(Z, Z %*% rhs) / nrow(Z)
 }
 
+#' Estimate the residual left outside a sampled range
+#'
+#' @param sample_y Sampled range matrix.
+#' @param q Orthonormal basis used to project `sample_y`.
+#'
+#' @return Frobenius norm of the projection residual.
+#' @noRd
 sampled_range_residual <- function(sample_y, q) {
     projected <- q %*% crossprod(q, sample_y)
     norm(sample_y - projected, type = "F")

@@ -1,3 +1,19 @@
+#' Apply QDM-style marginal adjustment columnwise
+#'
+#' @param y_hist Historical reference matrix.
+#' @param x_hist Historical model matrix.
+#' @param x_fut Future model matrix.
+#' @param ratio_seq Logical scalar or vector marking ratio-style columns.
+#' @param trace Dry-day threshold applied after ratio-style correction.
+#' @param trace_calc Internal threshold used to lift zero-like values before
+#'   quantile calculations.
+#' @param ratio_max Maximum multiplicative change allowed in low-reference
+#'   ratio-style tails.
+#' @param ratio_max_trace Threshold below which `ratio_max` is enforced.
+#'
+#' @return A list with corrected historical and future matrices plus expanded
+#'   control arguments.
+#' @noRd
 qdm_adjust_matrix <- function(
     y_hist,
     x_hist,
@@ -48,6 +64,21 @@ qdm_adjust_matrix <- function(
     )
 }
 
+#' Apply QDM-style marginal adjustment to one variable
+#'
+#' @param y_hist Historical reference vector.
+#' @param x_hist Historical model vector.
+#' @param x_fut Future model vector.
+#' @param ratio Whether to use ratio-style handling.
+#' @param trace Dry-day threshold applied after ratio-style correction.
+#' @param trace_calc Internal threshold used to lift zero-like values before
+#'   quantile calculations.
+#' @param ratio_max Maximum multiplicative change allowed in low-reference
+#'   ratio-style tails.
+#' @param ratio_max_trace Threshold below which `ratio_max` is enforced.
+#'
+#' @return A list with corrected `x_hist` and `x_fut` vectors.
+#' @noRd
 qdm_adjust_column <- function(
     y_hist,
     x_hist,
@@ -93,6 +124,14 @@ qdm_adjust_column <- function(
     list(x_hist = x_hist_corr, x_fut = x_fut_corr)
 }
 
+#' Expand a scalar QDM control to one value per column
+#'
+#' @param x Scalar or vector control input.
+#' @param p Required output length.
+#' @param name Name used in validation errors.
+#'
+#' @return A vector of length `p`.
+#' @noRd
 expand_qdm_arg <- function(x, p, name) {
     if (length(x) == 1L) {
         return(rep(x, p))
@@ -103,6 +142,13 @@ expand_qdm_arg <- function(x, p, name) {
     x
 }
 
+#' Lift trace-like values away from zero before quantile interpolation
+#'
+#' @param x Numeric vector to modify.
+#' @param trace_calc Internal lifting threshold.
+#'
+#' @return A numeric vector with very small entries replaced by positive values.
+#' @noRd
 lift_trace_values <- function(x, trace_calc) {
     idx <- which(x < trace_calc)
     if (length(idx) == 0L) {

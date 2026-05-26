@@ -2,9 +2,9 @@
 \newcommand*{\ThesisType}{master}
 
 %% Thesis title (exactly as in the formal assignment)
-\newcommand*{\ThesisTitle}{Statistical Post-processing of Multidimensional Climate Data}
+\newcommand*{\ThesisTitle}{Randomized Numerical Linear Algebra in Mixed Precision, with an Application to Climate Models}
 %% Plaintext version for PDF metadata, uncomment if needed (defauls to \ThesisTitle)
-\newcommand*{\ThesisTitlePlaintext}{Statistical Post-processing of Multidimensional Climate Data}
+\newcommand*{\ThesisTitlePlaintext}{Randomized Numerical Linear Algebra in Mixed Precision, with an Application to Climate Models}
 
 %% Author of the thesis
 \newcommand*{\ThesisAuthor}{Bc. Ján Kovačovský}
@@ -40,31 +40,36 @@
 
 %% Abstract (recommended length around 80-200 words; this is not a copy of your thesis assignment!)
 \newcommand*{\Abstract}{%
-	This thesis studies randomized numerical linear algebra in mixed precision,
-	with a later application to multivariate climate-model post-processing. The
-	main mathematical objective is to analyze how randomized approximation and
-	finite-precision perturbations interact when empirical covariance operators
-	are compressed and used to construct a regularized dependence-correction
-	map. Least-squares sketching is treated as the first model setting in which
-	these effects can be understood geometrically and numerically. The later
-	climate-facing part uses this viewpoint to formulate a covariance-based
-	transport step for multivariate bias correction, with emphasis on
-	conditioning, regularization, and the tradeoff between randomized and
-	arithmetic error.
+	This thesis studies randomized numerical linear algebra in mixed-precision
+	arithmetic, with climate-model post-processing as a downstream application.
+	The central mathematical objective is to understand how randomized
+	approximation and floating-point perturbations interact when large linear
+	algebra problems are compressed and solved approximately. Randomized
+	least-squares methods provide the first model setting, where sketching,
+	conditioning, and solver stability can be analyzed in a clean form. The
+	second main setting is a regularized covariance-transport map for
+	multivariate bias correction, where empirical covariance operators are
+	approximated by randomized low-rank surrogates and the effect of precision,
+	rank, and regularization can be studied at the operator level. The thesis
+	combines theory, numerical experiments, and prototype software in R and
+	Octave to identify regimes in which reduced precision remains acceptable
+	because arithmetic error stays below randomized approximation error.
 }
 
 %% Subject (short description for PDF metadata)
 \newcommand*{\Subject}{%
-	Statistical post-processing of multidimensional climate data.
+	Randomized numerical linear algebra in mixed precision, with an application to climate models.
 }
 
 %% Keywords (about 3-7)
 \newcommand*{\Keywords}{%
-	randomized numerical linear algebra, mixed precision, covariance transport,
-	multivariate bias correction, randomized low-rank approximation, climate models
+	randomized numerical linear algebra, mixed-precision arithmetic,
+	randomized least squares, covariance transport, multivariate bias correction,
+	climate models
 }
 %% Plaintext version for PDF metadata, uncomment if needed (defauls to \Keywords)
 \newcommand*{\KeywordsPlaintext}{%
-	randomized numerical linear algebra, mixed precision, covariance transport,
-	multivariate bias correction, randomized low-rank approximation, climate models
+	randomized numerical linear algebra, mixed-precision arithmetic,
+	randomized least squares, covariance transport, multivariate bias correction,
+	climate models
 }

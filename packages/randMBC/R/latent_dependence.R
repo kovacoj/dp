@@ -1,3 +1,11 @@
+#' Gaussianize a multivariate sample columnwise
+#'
+#' @param values Matrix of values to transform.
+#' @param reference Matrix used to define the marginal rank-to-Gaussian map.
+#'
+#' @return A matrix with the same dimensions as `values`, transformed to a
+#'   latent Gaussian scale.
+#' @noRd
 gaussianize_matrix <- function(values, reference) {
     out <- matrix(0, nrow = nrow(values), ncol = ncol(values))
 
@@ -9,6 +17,13 @@ gaussianize_matrix <- function(values, reference) {
     out
 }
 
+#' Gaussianize one column against a reference sample
+#'
+#' @param values Numeric vector to transform.
+#' @param reference Numeric reference vector used to build the empirical map.
+#'
+#' @return A numeric vector on the standard-normal scale.
+#' @noRd
 gaussianize_column <- function(values, reference) {
     n_tau <- max(length(reference), 32L)
     tau <- seq(0, 1, length.out = n_tau)
@@ -18,6 +33,14 @@ gaussianize_column <- function(values, reference) {
     stats::qnorm(u)
 }
 
+#' Restore marginal values according to latent scores
+#'
+#' @param values Matrix containing the target marginal values.
+#' @param scores Matrix whose columnwise ranks determine the rearrangement.
+#'
+#' @return A matrix with the marginals of `values` and the ordering induced by
+#'   `scores`.
+#' @noRd
 rank_restore_matrix <- function(values, scores) {
     out <- matrix(0, nrow = nrow(values), ncol = ncol(values))
 

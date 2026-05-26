@@ -10,42 +10,42 @@ First, it reduces the dependence-correction step to a concrete numerical linear 
 
 The central question of the note is therefore the following:
 \begin{quote}
-    Can randomized low-rank covariance transport be used as a computationally cheaper dependence-correction layer for multivariate bias correction, and how do rank, regularization, and precision affect accuracy and stability?
+	Can randomized low-rank covariance transport be used as a computationally cheaper dependence-correction layer for multivariate bias correction, and how do rank, regularization, and precision affect accuracy and stability?
 \end{quote}
 
-This is a smaller question than the full diploma-thesis agenda, but that is a feature rather than a defect. It creates one defensible project note that can later be absorbed into the thesis with little conceptual mismatch.
+This is a smaller question than the full diploma-thesis agenda, but that is a feature rather than a defect. It creates one defensible project note that can later be absorbed into the thesis with little conceptual mismatch. The main positive result of the current benchmark is already more specific than ``randomized low rank helps'': a shared reduced basis for the source and target covariance operators stabilizes the transport map dramatically relative to independently compressed subspaces.
 
 \section{Mathematical Object}
 
 Let
 \[
-    X_h \in \mathbb{R}^{n \times p}, \qquad X_f \in \mathbb{R}^{m \times p}, \qquad Y_h \in \mathbb{R}^{n \times p}
+	X_h \in \mathbb{R}^{n \times p}, \qquad X_f \in \mathbb{R}^{m \times p}, \qquad Y_h \in \mathbb{R}^{n \times p}
 \]
 denote historical model data, future model data, and historical reference data. After columnwise marginal correction of QDM type, one obtains corrected marginal samples
 \[
-    \widetilde X_h,\, \widetilde X_f.
+	\widetilde X_h,\, \widetilde X_f.
 \]
 The remaining problem is to alter dependence while preserving these corrected marginals.
 
 Following the viewpoint already developed in the thesis chapter on randomized covariance transport, it is convenient to pass to a latent rank-normal representation. Columnwise plotting-position ranks are converted to empirical probabilities and then mapped through the inverse standard normal distribution. This yields latent matrices
 \[
-    Z_X, \qquad Z_Y, \qquad Z_f,
+	Z_X, \qquad Z_Y, \qquad Z_f,
 \]
 corresponding to the corrected historical model sample, the historical reference sample, and the corrected future sample. The point of this step is not to assert that the climate data are truly Gaussian. Rather, it isolates a dependence operator in a finite-dimensional inner-product space where covariance-based transport is natural.
 
 The empirical covariance operators are
 \[
-    C_X = \frac{1}{n} Z_X^\top Z_X,
-    \qquad
-    C_Y = \frac{1}{n} Z_Y^\top Z_Y.
+	C_X = \frac{1}{n} Z_X^\top Z_X,
+	\qquad
+	C_Y = \frac{1}{n} Z_Y^\top Z_Y.
 \]
 With a regularization parameter $\lambda > 0$, the transport map is defined by
 \[
-    T_\lambda = (C_X + \lambda I)^{-1/2}(C_Y + \lambda I)^{1/2}.
+	T_\lambda = (C_X + \lambda I)^{-1/2}(C_Y + \lambda I)^{1/2}.
 \]
 The corrected future latent sample is then
 \[
-    Z_f^{\mathrm{corr}} = Z_f T_\lambda.
+	Z_f^{\mathrm{corr}} = Z_f T_\lambda.
 \]
 Finally, the latent correction is used only to update ranks, so that the eventual output inherits the marginal values from $\widetilde X_f$ while replacing their ordering by the ordering induced by $Z_f^{\mathrm{corr}}$.
 
@@ -55,33 +55,57 @@ This construction is less ambitious than MBCn and related full-distribution meth
 
 The expensive object is the covariance operator
 \[
-    C = \frac{1}{n} Z^\top Z.
+	C = \frac{1}{n} Z^\top Z.
 \]
 Rather than form and decompose the full covariance matrix directly, the prototype uses a randomized range approximation. Let
 \[
-    \Omega \in \mathbb{R}^{p \times (r+q)}
+	\Omega \in \mathbb{R}^{p \times (r+q)}
 \]
 be a sketching matrix with target rank $r$ and oversampling parameter $q$. The sampled range is built from
 \[
-    Y = C\Omega = \frac{1}{n} Z^\top(Z\Omega).
+	Y = C\Omega = \frac{1}{n} Z^\top(Z\Omega).
 \]
 If $Q$ is an orthonormal basis for the range of $Y$, then one approximates
 \[
-    C \approx QBQ^\top,
-    \qquad
-    B = Q^\top C Q.
+	C \approx QBQ^\top,
+	\qquad
+	B = Q^\top C Q.
 \]
 The local implementation detail matters here: the small core matrix is assembled from products involving the compressed basis, so that one does not need to materialize a dense full covariance matrix in the randomized path. This is the same operator-level idea that underlies standard randomized low-rank approximation \autocite{halko2011finding,martinsson2020randnla}.
 
+The crucial algorithmic choice is whether the source and target covariance operators are compressed in separate reduced coordinates or in one shared coordinate system. The independent variant constructs two bases,
+\[
+	Q_X = \operatorname{orth}(Y_X),
+	\qquad
+	Q_Y = \operatorname{orth}(Y_Y),
+\]
+and then builds
+\[
+	C_X \approx Q_X B_X Q_X^\top,
+	\qquad
+	C_Y \approx Q_Y B_Y Q_Y^\top.
+\]
+The shared-basis variant instead forms one basis
+\[
+	Q = \operatorname{orth}([Y_X, Y_Y]),
+\]
+and approximates both operators in the same reduced coordinates:
+\[
+	C_X \approx Q B_X Q^\top,
+	\qquad
+	C_Y \approx Q B_Y Q^\top.
+\]
+This shared-basis construction is the main randomized method advocated by the present note. The independent-basis variant is still useful, but mainly as a diagnostic baseline showing what goes wrong when the two matrix functions are built in incompatible reduced subspaces.
+
 The mixed-precision angle should be kept modest. The natural low-precision candidates are the large products
 \[
-    Z\Omega, \qquad Z^\top(Z\Omega),
+	Z\Omega, \qquad Z^\top(Z\Omega),
 \]
 because these dominate the arithmetic count in the low-rank path. By contrast, orthogonalization, small eigendecompositions, and matrix square roots or inverse square roots are much more sensitive and are better kept in double precision. This is the same logic that appears throughout mixed-precision numerical linear algebra: cheaper arithmetic is most useful in the robust bulk computations, while the stability-critical stages retain the more accurate format \autocite{higham2022mixed}.
 
 The right principle is therefore not ``use lower precision whenever possible'', but
 \[
-    \eta_{\mathrm{fp}} \lesssim \eta_{\mathrm{rand}},
+	\eta_{\mathrm{fp}} \lesssim \eta_{\mathrm{rand}},
 \]
 or more generally that floating-point perturbation should remain below the randomized approximation error or the relevant application tolerance \autocite{carson2026balancing}. If arithmetic error is already much smaller than the approximation error, insisting on full double precision in the bulk products may simply be oversolving one part of the computational pipeline.
 
@@ -89,92 +113,149 @@ or more generally that floating-point perturbation should remain below the rando
 
 The mathematical advantage of this formulation is that the main forward error can be localized. Write
 \[
-    A = C_X + \lambda I, \qquad B = C_Y + \lambda I,
+	A = C_X + \lambda I, \qquad B = C_Y + \lambda I,
 \]
 and suppose the computed operators are
 \[
-    \widehat A = A + \Delta A, \qquad \widehat B = B + \Delta B.
+	\widehat A = A + \Delta A, \qquad \widehat B = B + \Delta B.
 \]
 Then the exact and computed transport maps are
 \[
-    T_\lambda = A^{-1/2}B^{1/2},
-    \qquad
-    \widehat T_\lambda = \widehat A^{-1/2}\widehat B^{1/2}.
+	T_\lambda = A^{-1/2}B^{1/2},
+	\qquad
+	\widehat T_\lambda = \widehat A^{-1/2}\widehat B^{1/2}.
 \]
 The natural forward quantity is
 \[
-    \norm{T_\lambda - \widehat T_\lambda}_2,
+	\norm{T_\lambda - \widehat T_\lambda}_2,
 \]
 and the induced future-data perturbation is bounded by
 \[
-    \norm{Z_f T_\lambda - Z_f \widehat T_\lambda}_F
-    \le
-    \norm{Z_f}_F\, \norm{T_\lambda - \widehat T_\lambda}_2.
+	\norm{Z_f T_\lambda - Z_f \widehat T_\lambda}_F
+	\le
+	\norm{Z_f}_F\, \norm{T_\lambda - \widehat T_\lambda}_2.
 \]
 
 The main conditioning mechanism is visible already in the algebraic split
 \[
-    \norm{T_\lambda - \widehat T_\lambda}_2
-    \le
-    \norm{A^{-1/2}}_2\,\norm{B^{1/2} - \widehat B^{1/2}}_2
-    +
-    \norm{A^{-1/2} - \widehat A^{-1/2}}_2\,\norm{\widehat B^{1/2}}_2.
+	\norm{T_\lambda - \widehat T_\lambda}_2
+	\le
+	\norm{A^{-1/2}}_2\,\norm{B^{1/2} - \widehat B^{1/2}}_2
+	+
+	\norm{A^{-1/2} - \widehat A^{-1/2}}_2\,\norm{\widehat B^{1/2}}_2.
 \]
 This shows why regularization matters twice. It stabilizes the inverse square root by keeping the regularized spectrum away from zero, and it controls the amplification factor through which covariance perturbations are transmitted to the transport map. Standard perturbation theory for matrix functions then yields first-order bounds whose constants deteriorate as the regularized eigenvalues approach zero \autocite{higham2008functions}. In consequence, the important experimental question is not only how small the covariance approximation error becomes, but how this error is filtered by the regularized transport map.
 
 This is also the point at which randomized and arithmetic errors should be separated. One may think of the computed covariance as
 \[
-    \widehat C = C + E_{\mathrm{rand}} + E_{\mathrm{fp}},
+	\widehat C = C + E_{\mathrm{rand}} + E_{\mathrm{fp}},
 \]
 where $E_{\mathrm{rand}}$ arises from truncation to the sampled range and $E_{\mathrm{fp}}$ from finite-precision arithmetic. The operator-level question is whether $E_{\mathrm{fp}}$ remains hidden beneath $E_{\mathrm{rand}}$, or whether the arithmetic perturbation becomes visible in transport error and eventually in the corrected future sample.
+
+The shared-basis construction sharpens this viewpoint. If both regularized covariance operators are represented as
+\[
+	\widehat A = Q B_X Q^\top + \lambda I,
+	\qquad
+	\widehat B = Q B_Y Q^\top + \lambda I
+\]
+in one common orthonormal basis $Q$, then the covariance perturbations still enter through $\Delta A$ and $\Delta B$, but they no longer carry an additional coordinate mismatch between the source and target reduced models.
+
+\begin{proposition}[Why the shared basis is numerically preferable]
+	Suppose $Q$ is an orthonormal basis such that
+	\[
+		\|(I-QQ^\top)C_X\|_2 \le \varepsilon_X,
+		\qquad
+		\|(I-QQ^\top)C_Y\|_2 \le \varepsilon_Y,
+	\]
+	and define
+	\[
+		\widehat A = Q B_X Q^\top + \lambda I,
+		\qquad
+		\widehat B = Q B_Y Q^\top + \lambda I
+	\]
+	with $B_X = Q^\top C_X Q$ and $B_Y = Q^\top C_Y Q$. Then the transport perturbation satisfies the same first-order form as before,
+	\[
+		\norm{T_\lambda - \widehat T_\lambda}_2
+		\lesssim
+		K_\lambda(C_X,C_Y)(\varepsilon_X + \varepsilon_Y),
+	\]
+	but now the two covariance errors are measured in compatible reduced coordinates.
+\end{proposition}
+
+\begin{proof}[Proof sketch]
+	The compression errors satisfy
+	\[
+		\norm{C_X - Q B_X Q^\top}_2 \le \varepsilon_X,
+		\qquad
+		\norm{C_Y - Q B_Y Q^\top}_2 \le \varepsilon_Y,
+	\]
+	so the regularized perturbations obey $\norm{\Delta A}_2 \le \varepsilon_X$ and $\norm{\Delta B}_2 \le \varepsilon_Y$. The transport bound then follows from the same square-root and inverse-square-root perturbation argument used above. The point is not a different asymptotic formula, but the cleaner geometry: both regularized matrix functions are built from one reduced coordinate system, so one avoids comparing source and target transports assembled in misaligned subspaces.
+\end{proof}
 
 \section{Implementation and Controlled Experiments}
 
 The local R package \texttt{randMBC} implements precisely the reduced workflow described above: latent Gaussianization, randomized covariance approximation, regularized covariance transport, and the associated diagnostics. The first focused validation step is the script \texttt{experiments/randmbc\_synthetic\_validation.R}, which compares three families of methods on controlled latent data:
 \begin{enumerate}
-    \item a deterministic full covariance-transport baseline,
-    \item randomized covariance transport with independently approximated source and target subspaces,
-    \item randomized covariance transport with a joint reduced basis shared by both covariance operators.
+	\item a deterministic full covariance-transport baseline,
+	\item randomized covariance transport with independently approximated source and target subspaces,
+	\item shared-basis randomized covariance transport, with one reduced basis used for both covariance operators.
 \end{enumerate}
 
 The synthetic data are intentionally operator-centered rather than climate-realistic. They are generated directly in latent space with several controlled spectral regimes: fast exponential decay, polynomial decay, nearly flat spectra, and low-rank signal plus noise. Each regime uses separate source, target, and future samples together with mild block dependence. This design avoids confounding the first validation step with the full MBC pipeline and makes the operator-level diagnostics directly interpretable.
 
 Each run records
 \[
-    \|C - \widehat C\|_2,
-    \qquad
-    \|T_\lambda - \widehat T_\lambda\|_2,
-    \qquad
-    \|Z_fT_\lambda - Z_f\widehat T_\lambda\|_F,
+	\|C - \widehat C\|_2,
+	\qquad
+	\|T_\lambda - \widehat T_\lambda\|_2,
+	\qquad
+	\|Z_fT_\lambda - Z_f\widehat T_\lambda\|_F,
 \]
 together with the condition number and minimum eigenvalue of the regularized covariance, the runtime, the rank, the oversampling level, the regularization parameter, the simulated precision, and simple dependence diagnostics on the corrected future sample. The benchmark writes machine-readable outputs under \texttt{results/} and figures under \texttt{figures/}, so it already matches the reproducibility requirements that the later thesis chapter will need.
 
+Table~\ref{tab:joint-basis-summary} gives one compact representative slice of the benchmark. The numbers are averages across the four synthetic spectrum families at rank $20$, oversampling $5$, regularization $\lambda = 10^{-6}$, and double precision. The key fact is immediate: the shared basis leaves the covariance approximation error in the same broad range, but it collapses the transport and downstream future-sample errors by two to three orders of magnitude.
+
+\begin{table}[t]
+	\centering
+	\caption{Representative benchmark slice showing the benefit of the shared basis. Averages are taken over the four synthetic spectrum families for rank $20$, oversampling $5$, $\lambda = 10^{-6}$, and double precision.}
+	\label{tab:joint-basis-summary}
+	\begin{tabular}{lccc}
+		\toprule
+		Method            & covariance error & transport error & future perturbation \\
+		\midrule
+		full baseline     & 0                & 0               & 0                   \\
+		independent basis & 0.436            & 678.9           & 8124.9              \\
+		shared basis      & 0.730            & 2.80            & 19.90               \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
 \begin{figure}[t]
-    \centering
-    \includegraphics[width=0.9\textwidth]{randmbc_cov_error_vs_rank.pdf}
-    \caption{Covariance approximation error versus rank on the focused synthetic latent-data validation. The error decreases consistently as the target rank grows, and simulated single precision remains close to double precision in this truncation-dominated regime.}
-    \label{fig:randmbc-cov-error}
+	\centering
+	\includegraphics[width=0.9\textwidth]{randmbc_cov_error_vs_rank.pdf}
+	\caption{Covariance approximation error versus rank on the focused synthetic latent-data validation. The error decreases consistently as the target rank grows, and simulated single precision remains close to double precision in this truncation-dominated regime.}
+	\label{fig:randmbc-cov-error}
 \end{figure}
 
 \begin{figure}[t]
-    \centering
-    \includegraphics[width=0.9\textwidth]{randmbc_transport_error_vs_rank.pdf}
-    \caption{Transport-map error versus rank. Regularization changes the picture decisively: with $\lambda = 10^{-6}$, the inverse-square-root amplification produces errors of order $10^2$ to $10^3$, while with $\lambda = 10^{-2}$ the transport error drops to order one and decreases further with rank.}
-    \label{fig:randmbc-transport-error}
+	\centering
+	\includegraphics[width=0.9\textwidth]{randmbc_transport_error_vs_rank.pdf}
+	\caption{Transport-map error versus rank. Regularization changes the picture decisively: with $\lambda = 10^{-6}$, the inverse-square-root amplification produces errors of order $10^2$ to $10^3$, while with $\lambda = 10^{-2}$ the transport error drops to order one and decreases further with rank.}
+	\label{fig:randmbc-transport-error}
 \end{figure}
 
 The first message of the focused validation is positive: the randomized covariance approximation behaves in the expected direction. Across the controlled spectrum families, the covariance error decreases materially as the target rank grows, and simulated single precision remains close to double precision throughout. This is exactly the regime in which one should expect truncation error to dominate arithmetic error.
 
-The second message is that regularization is not a cosmetic parameter. In the independent-subspace variant, the mean transport error remains in the hundreds for $\lambda = 10^{-6}$ and stays large even when the covariance approximation itself is already improving. By contrast, the joint-basis variant reduces transport error to order one across the same spectral regimes. The regularized minimum eigenvalue makes the same point from the opposite direction: once the spectral gap created by $\lambda$ is substantial enough, the inverse-square-root stage no longer amplifies covariance perturbations catastrophically, and the quality of the reduced coordinate system becomes the decisive issue.
+The second message is that regularization is not a cosmetic parameter. In the independent-subspace variant, the mean transport error remains in the hundreds for $\lambda = 10^{-6}$ and stays large even when the covariance approximation itself is already improving. By contrast, the shared-basis variant reduces transport error to order one across the same spectral regimes. The regularized minimum eigenvalue makes the same point from the opposite direction: once the spectral gap created by $\lambda$ is substantial enough, the inverse-square-root stage no longer amplifies covariance perturbations catastrophically, and the quality of the reduced coordinate system becomes the decisive issue.
 
-The third message is still cautionary, but no longer purely negative. Even in the best current regimes, the downstream dependence errors remain nontrivial, so the present randomized prototype is not yet application-ready. However, the joint-basis comparison isolates a genuinely promising direction: the transport layer is much better behaved when source and target covariance operators are represented in the same reduced coordinates. The right next step is therefore not to ask whether randomized covariance transport wins immediately, but to map out the spectral, rank, regularization, precision, and basis-selection regimes in which the operator-level approximation becomes credible.
+The third message is still cautionary, but no longer purely negative. Even in the best current regimes, the downstream dependence errors remain nontrivial, so the present randomized prototype is not yet application-ready. However, the shared-basis comparison isolates a genuinely promising direction: the transport layer is much better behaved when source and target covariance operators are represented in the same reduced coordinates. The right next step is therefore not to ask whether randomized covariance transport wins immediately, but to map out the spectral, rank, regularization, precision, and basis-selection regimes in which the operator-level approximation becomes credible.
 
 \section{Conclusion and Next Steps}
 
-The present note does not support the claim that the currently tested low-rank randomized prototype is already a superior dependence-correction layer for multivariate bias correction. On the current controlled benchmark, the deterministic full covariance-transport baseline remains the accuracy reference. That is not a failed result. It separates four facts that are essential for the thesis: the full covariance-transport operator is viable, the randomized path already shows speed potential, the low-rank regimes tested so far remain delicate, and a joint reduced basis can improve transport stability dramatically even when the raw covariance approximation error changes only modestly.
+The present note does not support the claim that the currently tested low-rank randomized prototype is already a superior dependence-correction layer for multivariate bias correction. On the current controlled benchmark, the deterministic full covariance-transport baseline remains the accuracy reference. That is not a failed result. It separates four facts that are essential for the thesis: the full covariance-transport operator is viable, the randomized path already shows speed potential, the low-rank regimes tested so far remain delicate, and a shared reduced basis can improve transport stability dramatically even when the raw covariance approximation error changes only modestly.
 
 That is nevertheless a useful result. It isolates where the problem lies. The current prototype is not failing because the covariance-transport viewpoint itself is incoherent. The deterministic full baseline performs well, which means the operator-level construction is numerically sensible in this synthetic setting. The difficulty lies in the low-rank truncation and in the choice of regimes where randomized compression can actually approximate the relevant latent covariance operators well enough to preserve the transport map.
 
-This gives a clear next experimental program. First, the rank and oversampling sweeps should be widened so that one can test whether the covariance approximation enters a genuinely low-error regime for larger latent dimensions. Second, the benchmark should continue to run across multiple spectral regimes, since the current results already suggest that spectral decay matters at least as much as raw dimension. Third, the joint-basis variant should be treated as a first serious algorithmic improvement, not merely as a diagnostic curiosity. Fourth, the regularization study should be sharpened, since the present benchmark shows that transport stability is dominated by the regularized spectral gap. Fifth, the precision comparison should be revisited only after the randomized approximation error has been driven low enough that arithmetic effects are no longer hidden beneath truncation error. Finally, once the operator-level story is numerically credible, the same method can be reinserted into a more realistic climate-facing workflow.
+This gives a clear next experimental program. First, the rank and oversampling sweeps should be widened so that one can test whether the covariance approximation enters a genuinely low-error regime for larger latent dimensions. Second, the benchmark should continue to run across multiple spectral regimes, since the current results already suggest that spectral decay matters at least as much as raw dimension. Third, the shared-basis variant should be treated as the main randomized method, not merely as a diagnostic curiosity. Fourth, the regularization study should be sharpened, since the present benchmark shows that transport stability is dominated by the regularized spectral gap. Fifth, the precision comparison should be revisited only after the randomized approximation error has been driven low enough that arithmetic effects are no longer hidden beneath truncation error. Finally, once the operator-level story is numerically credible, the same method can be reinserted into a more realistic climate-facing workflow.
 
 In this sense, the note already serves its intended role. It defines one narrow project, formulates the correct operator-level diagnostics, connects the method to randomized and mixed-precision numerical linear algebra, and turns the benchmark into a regime-identification problem rather than a simple win-or-loss comparison. That is enough for a supervisor-facing short paper and, later, it can be absorbed almost directly into the thesis chapter sequence on randomized covariance transport, implementation, and experiments.
