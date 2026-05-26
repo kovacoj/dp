@@ -25,7 +25,9 @@ containers/.env
 *:Zone.Identifier
 
 # Local paper build artifacts
+paper/randmbc-note/.aux/
 paper/randmbc-note/indent.log
+paper/randmbc-note/paper.pdf
 paper/randmbc-note/*.aux
 paper/randmbc-note/*.bcf
 paper/randmbc-note/*.bbl

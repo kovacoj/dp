@@ -1,6 +1,6 @@
 COMPOSE := docker compose -f containers/compose.yaml
 
-.PHONY: containers-build python-shell python-sync r-shell octave-shell latex-shell thesis jupyter jupyter-down
+.PHONY: containers-build python-shell python-sync r-shell octave-shell latex-shell thesis paper jupyter jupyter-down
 
 containers-build:
 	$(COMPOSE) build
@@ -22,6 +22,10 @@ latex-shell:
 
 thesis:
 	./bin/latex-build
+
+paper:
+	$(COMPOSE) run --rm --workdir /workspace/paper/randmbc-note latex latexmk paper || \
+	$(COMPOSE) run --rm --workdir /workspace/paper/randmbc-note latex latexmk -g paper
 
 jupyter:
 	$(COMPOSE) up jupyter

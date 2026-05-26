@@ -1,0 +1,43 @@
+%% Reused by TeXtured metadata even though this document is a short paper/report.
+\newcommand*{\ThesisType}{report}
+
+%% Document title and metadata
+\newcommand*{\ThesisTitle}{Randomized Covariance Transport for Multivariate Bias Correction: A Low-Rank and Mixed-Precision Prototype}
+\newcommand*{\ThesisTitlePlaintext}{Randomized Covariance Transport for Multivariate Bias Correction: A Low-Rank and Mixed-Precision Prototype}
+\newcommand*{\ThesisTitleFront}{\ThesisTitle}
+
+%% Author
+\newcommand*{\ThesisAuthor}{J\'an Kova\v{c}ovsk\'y}
+\newcommand*{\ThesisAuthorPlaintext}{Jan Kovacovsky}
+
+%% Submission year
+\newcommand*{\YearSubmitted}{2026}
+
+%% Basic affiliation/project metadata
+\newcommand*{\University}{Charles University}
+\newcommand*{\Department}{Department of Atmospheric Physics}
+\newcommand*{\DeptType}{Department}
+\newcommand*{\Supervisor}{doc. Mgr. Ji\v{r}\'i Mik\v{s}ovsk\'y, Ph.D.}
+\newcommand*{\SupervisorsDepartment}{Department of Atmospheric Physics}
+\newcommand*{\StudyProgramme}{Diploma thesis workspace}
+\newcommand*{\ReportType}{Supervisor Review Note}
+\newcommand*{\ReportCourse}{Project 2: Randomized Covariance Transport for Multivariate Bias Correction}
+\newcommand*{\ReportAffiliation}{Department of Atmospheric Physics, Charles University}
+
+%% Abstract
+\newcommand*{\Abstract}{%
+    This note studies a narrow climate-facing problem in randomized numerical linear algebra: whether a regularized covariance-transport layer can serve as a computationally cheaper dependence-correction step inside a simplified multivariate bias-correction workflow. The focus is not on the full climate post-processing pipeline, but on one operator-level object that is mathematically analyzable and implementation-friendly. After marginal adjustment and a latent rank-normal transform, dependence correction is represented by a regularized covariance transport map. The expensive covariance operators are then approximated by randomized low-rank surrogates, with optional reduced precision in the large sketch products. The resulting prototype is implemented in the local R package \texttt{randMBC} and evaluated on a focused synthetic latent-data benchmark spanning several spectral regimes. The benchmark compares independent source/target low-rank approximations against a shared reduced basis, and it shows that this modelling choice matters dramatically: in the hard low-regularization regime, a joint basis can reduce transport error from the hundreds to order one even when covariance approximation error is still nontrivial. At the same time, the downstream dependence errors remain too large for the present randomized prototype to be considered application-ready. Thus the current conclusion is not that the method is already superior, but that it isolates a clean operator-level project whose numerical advantages and limitations can be measured honestly.
+}
+
+%% Subject (short description for PDF metadata)
+\newcommand*{\Subject}{%
+    Randomized covariance transport for multivariate bias correction.
+}
+
+%% Keywords (about 3-7)
+\newcommand*{\Keywords}{%
+    randomized numerical linear algebra, mixed precision, covariance transport, multivariate bias correction, climate models
+}
+\newcommand*{\KeywordsPlaintext}{%
+    randomized numerical linear algebra, mixed precision, covariance transport, multivariate bias correction, climate models
+}

@@ -6,6 +6,11 @@ The note is written in the same mathematical and expository style as the thesis,
 
 Current draft:
 
+- `paper.tex`
+- `chapters/Paper.tex`
+
+Compatibility wrapper:
+
 - `randmbc-note.tex`
 
 Related code and results:
@@ -21,3 +26,9 @@ Related code and results:
 - `experiments/output/randmbc-benchmark.csv`
 - `experiments/output/randmbc-benchmark-summary.csv`
 - `experiments/output/randmbc-benchmark-plots.pdf`
+
+Build from inside this directory with:
+
+```sh
+latexmk paper
+```
