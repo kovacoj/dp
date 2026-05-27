@@ -316,3 +316,73 @@ randomized and finite-precision approximation of the covariance operator remains
 accurate enough after it is processed by matrix square roots and inverse square
 roots. The mathematical language is therefore the same in spirit, but the operator
 calculus is richer.
+
+\section{Least-Squares Perturbation Bounds}
+
+For the least-squares chapters, a more detailed perturbation statement is
+needed than the qualitative bound given earlier. The classical results of
+Wedin and Stewart provide the right framework.
+
+\begin{theorem}[Wedin]
+	\label{thm:wedin}
+	Let \(A, \tilde A \in \R^{n \times d}\) with \(n \ge d\), and suppose \(A\)
+	has full column rank. Let \(x_\star\) and \(\tilde x_\star\) be the
+	least-squares solutions of
+	\[
+		\min_x \|Ax - b\|_2, \qquad \min_x \|\tilde A x - \tilde b\|_2.
+	\]
+	Write \(r_\star = b - Ax_\star\) and \(\tilde r_\star = \tilde b - \tilde A
+	\tilde x_\star\) for the optimal residuals. Then
+	\[
+		\frac{\|\tilde x_\star - x_\star\|_2}{\|x_\star\|_2}
+		\le
+		\kappa_2(A)\,
+		\left(
+		\frac{\|\Delta A\|_2}{\|A\|_2}
+		+
+		\frac{\|\Delta b\|_2}{\|b\|_2}
+		\right)
+		+
+		\kappa_2(A)^2\,
+		\frac{\|r_\star\|_2}{\|A\|_2\,\|x_\star\|_2}\,
+		\frac{\|\Delta A\|_2}{\|A\|_2}
+		+
+		O\!\left(\|\Delta\|^2\right),
+	\]
+	where \(\Delta A = \tilde A - A\), \(\Delta b = \tilde b - b\), and
+	\(\|\Delta\|\) denotes the maximum relative perturbation magnitude.
+\end{theorem}
+
+The qualitative content is the same as the earlier schematic bound, but
+\Cref{thm:wedin} makes the constant structure explicit. The first term reflects
+the direct sensitivity of the solution to data perturbations, amplified by
+\(\kappa_2(A)\). The second term reflects the additional sensitivity that arises
+when the problem is inconsistent: the residual \(r_\star\) is not zero, and the
+perturbation of the residual direction is amplified by \(\kappa_2(A)^2\).
+
+This distinction between the consistent and inconsistent cases is central to
+the thesis. In sketch-and-solve methods, the sketch replaces \(A\) by a
+compressed operator \(SA\). The perturbation \(\Delta A = SA - A\) (in the
+appropriate metric) is governed by the embedding distortion \(\varepsilon\), but
+its effect on the solution is filtered through \(\kappa_2(A)\) and the residual
+size. Therefore, a small embedding distortion does not guarantee a small
+solution error unless the original problem is well-conditioned or nearly
+consistent. The experiments track both residual ratio and relative solution
+error precisely because these two quantities probe different aspects of the
+perturbation structure.
+
+In the covariance-transport chapters, the same pattern reappears in a different
+algebraic form. The perturbation of the transport map \(T_\lambda = A^{-1/2}
+B^{1/2}\) is not governed by \(\kappa_2(A)\) alone, but by the conditioning of
+the regularized matrix functions \(A^{-1/2}\) and \(B^{1/2}\). The
+inverse-square-root map has a derivative proportional to \(\lambda_{\min}^{-3/2}\),
+so the effective amplification factor is
+\[
+	K_\lambda(C_X, C_Y)
+	\sim
+	\frac{1}{\lambda_{\min}(C_X + \lambda I)^{3/2}},
+\]
+which is the direct analogue of \(\kappa_2(A)^2\) in the least-squares setting.
+Regularization \(\lambda\) plays the same structural role as improving the
+conditioning of the least-squares problem: it controls the amplification factor
+at the cost of changing the operator being approximated.

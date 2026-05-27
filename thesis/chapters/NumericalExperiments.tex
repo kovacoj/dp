@@ -311,6 +311,98 @@ operators stabilizes the transport map even when the raw covariance error is
 only marginally different.  The fourth row serves as the diagnostic baseline
 for comparison.
 
+\section{Covariance-Transport Experiments: Part II}
+
+The second part of the experimental chapter tests the theory from
+\Cref{ch:randcovtransport} directly.  Instead of tracking only the compressed
+least-squares residual, one now measures the quality of a randomized low-rank
+covariance approximation and the perturbation it induces in the regularized
+transport map.  The experiments are organized as explicit tests of the theorem
+structure:
+\[
+	\|T_\lambda - \widehat T_\lambda\|_2
+	\lesssim
+	K_\lambda(C_X, C_Y)\,
+	(\eta_{\mathrm{rand}} + \eta_{\mathrm{fp}}),
+\]
+where \(K_\lambda\) is the amplification factor determined by the regularized
+spectral gaps, \(\eta_{\mathrm{rand}}\) bounds the randomized truncation error,
+and \(\eta_{\mathrm{fp}}\) bounds the floating-point perturbation.  Each
+experiment varies one axis while holding the others fixed.
+
+\subsection{Covariance approximation error versus rank}
+
+\textbf{Hypothesis.}  For covariance operators with spectral decay,
+\(\|C - \widehat C\|_2\) decreases as the target rank increases, with a rate
+governed by the spectral tail beyond the chosen rank.
+
+\textbf{Setup.}  Fix \(\lambda = 10^{-2}\) and double precision.  Generate
+covariance operators from each spectrum family (exponential, linear, gap,
+climate-shaped) using \texttt{generate\_cov\_operator} and
+\texttt{generate\_climate\_cov}.  Vary the target rank from small values up to
+\(p\).
+
+\textbf{Diagnostics.}  \(\|C - \widehat C\|_2\) (source and target
+separately), residual norm estimate from the range finder, and runtime.
+
+\subsection{Transport error versus regularization}
+
+\textbf{Hypothesis.}  For fixed rank, transport error is controlled by
+\(\lambda\) through the inverse-square-root amplification factor.  Too-small
+\(\lambda\) leads to instability; too-large \(\lambda\) changes the transported
+operator.
+
+\textbf{Setup.}  Fix rank at a moderately large value and double precision.
+Vary \(\lambda\) from \(10^{-6}\) to \(10^{-1}\).
+
+\textbf{Diagnostics.}  \(\|T_\lambda - \widehat T_\lambda\|_2\), minimum
+eigenvalue of the regularized covariance, condition number estimate, and
+Pearson correlation error of the corrected future sample.
+
+\subsection{Precision threshold sweep}
+
+\textbf{Hypothesis.}  In the regime where randomized truncation error
+dominates floating-point error, single precision in the sketch products
+produces nearly identical results to double precision.  A crossover point
+appears when the rank is large enough that truncation error falls below the
+arithmetic error floor.
+
+\textbf{Setup.}  Fix rank and \(\lambda\).  Compare double, single, and
+bfloat16 simulation in the sketch products via
+\texttt{precision\_model}.
+
+\textbf{Diagnostics.}  Transport error at each precision, ratio
+\(\eta_{\mathrm{fp}} / \eta_{\mathrm{rand}}\) estimated from
+\texttt{sketch\_forward\_bound}, and the \texttt{is\_fp\_hidden} flag.
+
+\subsection{Shared versus independent basis}
+
+\textbf{Hypothesis.}  The shared-basis construction stabilizes the transport
+map by eliminating the coordinate mismatch between source and target reduced
+models, even when the raw covariance error is comparable.
+
+\textbf{Setup.}  For the same rank, \(\lambda\), and precision, compare the
+independent-subspace and shared-basis variants from
+\Cref{ch:randcovtransport}.
+
+\textbf{Diagnostics.}  Transport error, future-sample perturbation
+\(\|Z_f T_\lambda - Z_f \widehat T_\lambda\|_F\), and the same statistical
+diagnostics as in \Cref{ch:climate}.
+
+\subsection{Balancing randomized and arithmetic error}
+
+\textbf{Hypothesis.}  The balanced regime \(\eta_{\mathrm{fp}} \lesssim
+\eta_{\mathrm{rand}}\) is achievable and detectable: increasing rank reduces
+\(\eta_{\mathrm{rand}}\) until a crossover where further rank increase reveals
+floating-point error.
+
+\textbf{Setup.}  Fix \(\lambda\) and single-precision sketch.  Vary the rank
+from small to large.  Track both error sources.
+
+\textbf{Diagnostics.}  Estimated \(\eta_{\mathrm{rand}}\) (from range-finder
+residual), estimated \(\eta_{\mathrm{fp}}\) (from
+\texttt{sketch\_forward\_bound}), their ratio, and the total transport error.
+
 \section{Application-Facing Diagnostics}
 
 Once the covariance-transport experiments are connected to a climate-shaped data
