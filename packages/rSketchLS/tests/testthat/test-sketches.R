@@ -109,6 +109,44 @@ test_that("sketch_lstsq returns a solution vector with expected length", {
     expect_true(is.numeric(fit$condition_number))
 })
 
+test_that("sketch_precond_lstsq matches full QR residual on small problems", {
+    set.seed(1)
+    A <- matrix(rnorm(160), nrow = 40, ncol = 4)
+    b <- rnorm(40)
+    ref <- qr.solve(A, b)
+    ref_residual <- sqrt(sum((A %*% ref - b)^2))
+
+    fit <- sketch_precond_lstsq(A, b, s = 16, method = "gaussian")
+
+    expect_length(fit$x, 4)
+    expect_true(is.numeric(fit$preconditioned_condition_number))
+    expect_equal(fit$residual_norm, ref_residual, tolerance = 1e-8)
+})
+
+test_that("sketch_precond_lstsq works with all sketch methods", {
+    for (m in c("gaussian", "rademacher", "srht")) {
+        set.seed(1)
+        n_val <- if (m == "srht") 32L else 40L
+        A <- matrix(rnorm(n_val * 4), nrow = n_val, ncol = 4)
+        b <- rnorm(n_val)
+        fit <- sketch_precond_lstsq(A, b, s = 16, method = m)
+
+        expect_length(fit$x, 4)
+        expect_equal(fit$method, m)
+        expect_equal(fit$qr_rank, 4)
+        expect_true(is.finite(fit$preconditioned_condition_number))
+    }
+})
+
+test_that("sketch_precond_lstsq improves conditioning for a well-conditioned matrix", {
+    set.seed(1)
+    A <- qr.Q(qr(matrix(rnorm(80), nrow = 20, ncol = 4)))
+    b <- rnorm(20)
+    fit <- sketch_precond_lstsq(A, b, s = 12, method = "gaussian")
+
+    expect_lt(fit$preconditioned_condition_number, 5)
+})
+
 test_that("gaussian_lstsq_experiment returns the expected metric columns", {
     result <- gaussian_lstsq_experiment(n = 20, d = 5, s_values = 5:8, trials = 3, seed = 1)
 
