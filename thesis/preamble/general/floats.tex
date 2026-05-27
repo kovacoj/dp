@@ -1,5 +1,11 @@
 %% Configuration of figures, tables, captions, ...
 
+%% Algorithm environment
+\usepackage[ruled,linesnumbered,noend]{algorithm2e}
+\SetAlgorithmName{Algorithm}{algorithm}{List of Algorithms}
+\SetAlCapSty{textnormal}
+\SetAlCapFnt{\bfseries}
+
 %% Use same numbering for figures, tables, and equations
 \makeatletter
 \let\c@figure\c@table
@@ -9,15 +15,15 @@
 %%% Graphics
 \usepackage{graphicx}   % embedding of pictures
 \graphicspath{          % default paths to figures
-    {./figures/}
-    {./figures/Inkscape/}
-    {./frontmatter/img/}
+	{./figures/}
+		{./figures/Inkscape/}
+		{./frontmatter/img/}
 }
 %% Macro for appending to the graphics path
 \ExplSyntaxOn
 \NewDocumentCommand{\appendtographicspath}{m}{
-    \tl_if_exist:cF { Ginput@path } { \tl_new:c { Ginput@path } }
-    \tl_gput_right:cn { Ginput@path } { #1 }
+	\tl_if_exist:cF { Ginput@path } { \tl_new:c { Ginput@path } }
+	\tl_gput_right:cn { Ginput@path } { #1 }
 }
 \ExplSyntaxOff
 
@@ -30,11 +36,11 @@
 \renewcommand*{\arraystretch}{1.1}
 
 \IfPackageAtLeastTF{xcolor}{2024-09-29}{}{
-    %% HACK: `ninecolors` is needed for `tabularray`, but fails to load with rgb color
-    %%       model (before 2024/09/29) -> see https://tex.stackexchange.com/a/614702
-    \selectcolormodel{natural}  % temporarily switch to natural color model
-    \usepackage{ninecolors}     % now we can load `ninecolors` package
-    \selectcolormodel{rgb}      % switch back to RGB color model
+	%% HACK: `ninecolors` is needed for `tabularray`, but fails to load with rgb color
+	%%       model (before 2024/09/29) -> see https://tex.stackexchange.com/a/614702
+	\selectcolormodel{natural}  % temporarily switch to natural color model
+	\usepackage{ninecolors}     % now we can load `ninecolors` package
+	\selectcolormodel{rgb}      % switch back to RGB color model
 }
 
 \usepackage{tabularray}     % advanced LaTeX tables
@@ -46,12 +52,12 @@
 %% Inspired by https://collaborating.tuhh.de/m21/public/theses/itt-latex-template
 \usepackage{floatrow}
 \floatsetup{ % for all floats
-    footnoterule = none,
-    footposition = bottom,
+	footnoterule = none,
+	footposition = bottom,
 }
 \floatsetup[figure]{
-    capbesideposition = right,
-    capbesidesep = quad,
+	capbesideposition = right,
+	capbesidesep = quad,
 }
 
 %% If you want to position the caption above the figure, use the following
@@ -68,15 +74,15 @@
 % \DeclareCaptionLabelSeparator{slash}{~/~} % `␣/␣` between label and caption
 \DeclareCaptionLabelSeparator{slash}{\hspace{0.25em}/\hspace{0.25em}} % `␣/␣` between label and caption
 \captionsetup{
-    format        = plain,  % no hanging indent
-    indention     = 0.6em,  % but still slightly indent the caption
-    % format        = hang,   % alternative: hanging indent
-    font          = small,
-    labelfont     = {sf,bf},
-    labelsep      = slash,
-    labelformat   = simple,
-    tableposition = bottom,
-    parskip       = .3\baselineskip plus 1pt,
+	format        = plain,  % no hanging indent
+	indention     = 0.6em,  % but still slightly indent the caption
+	% format        = hang,   % alternative: hanging indent
+	font          = small,
+	labelfont     = {sf,bf},
+	labelsep      = slash,
+	labelformat   = simple,
+	tableposition = bottom,
+	parskip       = .3\baselineskip plus 1pt,
 }
 
 \makeatletter
@@ -88,12 +94,12 @@
 \makeatother
 
 \DeclareCaptionFont{ftfont}{%
-    \scriptsize%
-    \color{Gray60}%
-    \sffamily\raggedleft%
+	\scriptsize%
+	\color{Gray60}%
+	\sffamily\raggedleft%
 }
 \captionsetup[floatfoot]{
-    footfont=ftfont, % https://tex.stackexchange.com/q/9547/120853
+	footfont=ftfont, % https://tex.stackexchange.com/q/9547/120853
 }
 
 %%% You can change the justification of all side-captions here

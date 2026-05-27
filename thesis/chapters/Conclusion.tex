@@ -1,28 +1,129 @@
 \chapter{Conclusion} \label{ch:conclusion}
 
-In this thesis, we studied randomized methods for overdetermined least-squares
-problems and their behavior in mixed-precision arithmetic. The main point is that
-randomized approximation and reduced precision should not be treated as two
-independent sources of computational improvement. In least-squares problems,
-both act on the same operator, and both are filtered through conditioning.
+\section*{Summary of Contributions}
 
-From the theoretical side, the thesis shows why sketching methods are useful.
-Their role is not only to reduce dimension, but to preserve enough of the
-least-squares geometry for the reduced problem or preconditioned problem to
-remain meaningful. From the numerical side, the thesis shows that the usefulness
-of lower precision depends on stability. The same arithmetic choice may be safe
-for one conditioning regime and unacceptable for another.
+This thesis has studied the interaction between randomized approximation and
+mixed-precision arithmetic in numerical linear algebra, using overdetermined
+least-squares problems as the model setting and regularized covariance transport
+as the main application-facing method.
 
-The experiments and the application chapter are meant to make this picture more
-concrete. They ask where the methods are reliable, where they are computationally
-advantageous, and where their failure modes begin to dominate the possible gain.
-For this reason, the thesis does not aim at one universal recommendation. Its goal
-is rather to give a clearer description of the tradeoff between accuracy,
-conditioning, precision, and computational cost.
+Three interlocking contributions were developed:
 
-Natural directions for later work include a more detailed error analysis for
-particular sketch families in mixed precision, more systematic comparisons of
-reduced-precision implementations, and a broader study of realistic application
-pipelines. At the present stage, however, the central conclusion is already clear:
-randomized numerical linear algebra and mixed precision are most informative
-when they are analyzed together.
+\begin{enumerate}
+	\item \textbf{Perturbation analysis for regularized covariance transport.}
+	      We gave deterministic first-order bounds for the perturbation of the
+	      regularized transport map
+	      \(T_\lambda = (C_X + \lambda I)^{-1/2}(C_Y + \lambda I)^{1/2}\)
+	      under additive disturbances to the source and target covariance
+	      operators. The bounds make explicit how the amplification factor
+	      \(K_\lambda(C_X,C_Y)\) depends on the regularized spectral gap, and
+	      they apply whether the perturbations arise from randomized low-rank
+	      compression, floating-point arithmetic, or both.
+
+	\item \textbf{Randomized low-rank approximation and mixed-precision error
+		      decomposition.}
+	      We decomposed the total covariance perturbation into a randomized
+	      truncation term governed by the spectral tail beyond the chosen rank,
+	      and a floating-point term governed by the unit roundoff, the
+	      accumulation length, and the norm of the sketching operator. This
+	      decomposition is the natural quantitative setting for the
+	      balancing-inexactness principle: mixed precision is safe only while
+	      \(\|E_{\mathrm{fp}}\| \lesssim \|E_{\mathrm{rand}}\|\), and the
+	      regime boundary is computable from the rank, the oversampling, and
+	      the spectrum of the covariance operator.
+
+	\item \textbf{Numerical regime identification.}
+	      We designed experiments that vary the approximation rank, the
+	      regularization level~\(\lambda\), and the working precision in the
+	      sketch products, while tracking covariance error, transport-map error,
+	      and the induced dependence error on corrected future data. The
+	      experiments distinguish three regimes: an approximation-dominated
+	      regime in which lower precision is hidden beneath truncation error, a
+	      regularization-dominated regime in which transport instability is the
+	      bottleneck, and a precision-visible regime in which floating-point
+	      error overtakes the randomized approximation. The current
+	      implementation operates primarily in the first two regimes; the
+	      precision-visible crossover has not yet been reached experimentally.
+\end{enumerate}
+
+\section*{Main Findings}
+
+On the least-squares side, the experiments confirm the expected picture.
+Residual preservation improves steadily with the sketch dimension, and the
+solution error is governed by the conditioning of the sketched matrix rather
+than by the residual quality alone. For Gaussian sketches with \(n=1024\) and
+\(d=20\), the residual ratio falls below \(1.1\) only when \(s \ge 200\), while
+the solution error is already at machine precision for all tested sketch sizes.
+This confirms that residual and solution diagnostics probe different aspects of
+the perturbation structure.
+
+On the covariance-transport side, the most important finding is the dominant
+role of regularization. For an exponential spectrum with \(p=30\) and
+condition number \(100\), the transport error at \(\lambda = 10^{-2}\) is
+approximately \(2\) at rank \(5\) and decreases to approximately \(1\) at rank
+\(25\). At \(\lambda = 10^{-6}\), the transport error remains above \(80\) even
+at rank \(25\). The covariance error, by contrast, is between \(0.6\) and
+\(0.9\) across all ranks and regularization levels. This confirms the
+theoretical prediction that the inverse-square-root amplification factor,
+scaling as \(\lambda_{\min}(C_X+\lambda I)^{-3/2}\), is the decisive
+bottleneck.
+
+The precision comparison shows that single and double precision produce
+nearly identical results in all tested configurations. The maximum relative
+difference in transport error is below \(2\%\) at rank \(20\) and
+\(\lambda = 10^{-6}\). This is expected: the floating-point contribution is
+hidden beneath the much larger randomized truncation and
+regularization-amplified errors.
+
+\section*{Limitations}
+
+The current randomized covariance-transport implementation is not competitive
+with the deterministic full baseline on the synthetic benchmarks tested. The
+deterministic full covariance transport and the MBC reference methods remain
+markedly more accurate in correlation and future-sample error than the low-rank
+randomized variants. This is not a failure of the covariance-transport
+viewpoint itself. Rather, it identifies the approximation regime as the current
+bottleneck: the rank and regularization choices that make the low-rank surrogate
+accurate enough for transport-map perturbations to be small have not yet been
+reached.
+
+A second limitation is that the precision-visible regime has not been observed
+experimentally. The current experiments operate in regimes where truncation
+error and regularization amplification both dominate the arithmetic floor, so
+the balancing-inexactness prediction cannot be fully validated numerically.
+
+The climate-model application chapter remains more of a design and context
+chapter than a fully realised experimental study. The transition from synthetic
+covariance operators to real climate-data pipelines would require data access,
+preprocessing, and domain-specific diagnostics that are outside the scope of
+the present numerical work.
+
+\section*{Future Work}
+
+Natural directions for later work include:
+
+\begin{itemize}
+	\item Pushing the approximation rank and oversampling further, using
+	      power iteration or block Krylov methods in the range finder, to
+	      reach the regime where randomized truncation error is small enough
+	      that arithmetic precision becomes visible.
+	\item A more detailed error analysis for particular sketch families in
+	      mixed precision, especially the SRHT, where the structured transform
+	      changes the accumulation model.
+	\item More systematic comparisons of reduced-precision implementations on
+	      hardware that natively supports lower-precision arithmetic, rather
+	      than simulated rounding.
+	\item A broader study of realistic climate-data pipelines, where the
+	      covariance-transport correction is embedded in a full
+	      post-processing workflow with domain-specific validation.
+	\item Exploring the shared-basis variant further, including adaptive
+	      construction of the joint basis and its interaction with the
+	      regularization parameter.
+\end{itemize}
+
+The central conclusion of this thesis is that randomized numerical linear
+algebra and mixed precision are most informative when they are analyzed
+together. Randomized approximation and reduced precision must be tuned
+jointly: precision reduction becomes meaningful only after the randomized
+approximation and regularization parameters place the method in a credible
+accuracy regime.

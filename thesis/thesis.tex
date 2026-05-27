@@ -24,28 +24,10 @@
 %% Preamble - data, packages, macros, and more
 \input{preamble/main}
 
-%% Only uncommented files are included (faster compilation)
-%% NOTE: If no files are uncommented, all files are included
-\includeonlysmart{
-    % frontmatter/title,
-    % frontmatter/declaration,
-    % frontmatter/dedication,
-    % frontmatter/information,
-    % chapters/Introduction,
-    % chapters/Notation,
-    chapters/MathematicalBackground,
-    chapters/MixedPrecision,
-    chapters/RandomizedLeastSquares,
-    chapters/RandomizedCovarianceTransport,
-    chapters/NumericalExperiments,
-    % chapters/ClimateApplication,
-    % chapters/Conclusion,
-}
-
 \begin{document}
 
-% \frontmatter
-% \include{frontmatter/title}
+\frontmatter
+\include{frontmatter/title}
 % \include{frontmatter/declaration}
 % \include{frontmatter/dedication}
 % \include{frontmatter/information}
@@ -61,6 +43,7 @@
 \include{chapters/RandomizedLeastSquares}
 \include{chapters/RandomizedCovarianceTransport}
 \include{chapters/NumericalExperiments}
+\include{chapters/AtmosphericPhenomena}
 \include{chapters/ClimateApplication}
 
 \backmatter
