@@ -6,8 +6,7 @@
 #' methods that apply stage-appropriate rounding without the caller needing to
 #' know format details.
 #'
-#' @param sketch_prec Simulated precision used in the bulk sketch products
-#'   \code{Z Omega} and \code{Z' (Z Omega)}.
+#' @param sketch_prec Simulated precision used in the bulk sketch products.
 #' @param orth_prec Simulated precision used before QR orthogonalization.
 #' @param core_prec Simulated precision used inside the small core eigenproblems
 #'   and matrix-function evaluations.  This is typically \code{"double"}.
@@ -18,8 +17,7 @@
 #'   formats, the rounding mode, and derived unit-roundoff values.
 #' @examples
 #' pm <- precision_model("single", "double")
-#' pm$unit_roundoff("sketch")
-#' pm$round_to_stage(matrix(rnorm(6), 3, 2), "sketch")
+#' unit_roundoff(pm, "sketch")
 #' @export
 precision_model <- function(
     sketch_prec = c("double", "single", "half", "bfloat16"),
@@ -96,6 +94,7 @@ round_to_stage <- function(pm, x, stage = c("sketch", "orth", "core")) {
     UseMethod("round_to_stage")
 }
 
+#' @exportS3Method randMBC::round_to_stage
 #' @noRd
 round_to_stage.randMBC_precision <- function(pm, x, stage = c("sketch", "orth", "core")) {
     stage <- match.arg(stage)
@@ -118,12 +117,10 @@ round_to_stage.randMBC_precision <- function(pm, x, stage = c("sketch", "orth", 
 
 #' Estimate the forward-error bound for a sketch product
 #'
-#' Under the standard matrix-product rounding model, the computed product
-#' \code{fl(Z' Z Omega)} satisfies
-#' \deqn{\|\Delta Y\|_2 \lesssim \gamma_n^{(u)} \frac{\|Z\|_2^2}{n} \|\Omega\|_2,}
-#' where \eqn{u} is the unit roundoff of the working precision.
-#' This function evaluates that bound for a given precision model and data
-#' norms.
+#' Under the standard matrix-product rounding model, the computed sketch
+#' product satisfies an error bound proportional to the unit roundoff,
+#' the squared spectral norm of the data, the norm of the sketching
+#' operator, and the reciprocal of the sample size.
 #'
 #' @param pm A \code{randMBC_precision} object.
 #' @param norm_Z Spectral norm of the data matrix \code{Z}.
@@ -131,7 +128,7 @@ round_to_stage.randMBC_precision <- function(pm, x, stage = c("sketch", "orth", 
 #' @param n Number of rows in \code{Z} (accumulation length).
 #' @param stage The computational stage whose precision governs the bound.
 #'
-#' @return A scalar upper bound on \eqn{\|\Delta Y\|_2}.
+#' @return A scalar upper bound on the forward error.
 #' @examples
 #' pm <- precision_model("single", "double")
 #' sketch_forward_bound(pm, norm_Z = 10, norm_Omega = sqrt(2), n = 100)

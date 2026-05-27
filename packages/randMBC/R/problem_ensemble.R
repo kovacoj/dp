@@ -1,6 +1,6 @@
 #' Generate a synthetic covariance operator for thesis experiments
 #'
-#' Creates a \(p \times p\) symmetric positive semidefinite matrix with a
+#' Creates a \eqn{p x p} symmetric positive semidefinite matrix with a
 #' controllable spectrum.  The spectrum is constructed explicitly, so that the
 #' rank, the spectral decay profile, and the target condition number are all
 #' exact by construction.
@@ -26,7 +26,7 @@
 #'
 #' @return A named list with components:
 #'   \describe{
-#'     \item{`covariance`}{The generated \(p \times p\) SPD matrix.}
+#'     \item{`covariance`}{The generated \eqn{p x p} SPD matrix.}
 #'     \item{`eigvals`}{The exact eigenvalues in nonincreasing order.}
 #'     \item{`rank`}{The exact rank.}
 #'     \item{`spectrum`}{The spectrum type used.}
@@ -75,7 +75,7 @@ generate_cov_operator <- function(
 
 #' Generate a climate-shaped synthetic covariance operator
 #'
-#' Constructs a \(p \times p\) covariance matrix whose spectrum and block
+#' Constructs a \eqn{p x p} covariance matrix whose spectrum and block
 #' structure mimic those observed in spatially correlated climate fields.  The
 #' operator consists of a low-rank dominant component (shared atmospheric
 #' modes), a block-diagonal component (local variable interactions), and a
