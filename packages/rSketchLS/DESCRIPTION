@@ -3,13 +3,14 @@ Type: Package
 Title: Randomized Sketching for Least Squares
 Version: 0.0.1
 Authors@R: person(given = "Thesis", family = "Author", role = c("aut", "cre"), email = "author@example.com")
+Author: Thesis Author
+Maintainer: Thesis Author <author@example.com>
 Description: Experimental implementations of randomized sketching methods for
     overdetermined least-squares problems. The package is intended as a thesis
     workbench for comparing sketch types, studying mixed-precision variants,
     and benchmarking accuracy against dense reference solvers.
 License: MIT + file LICENSE
 Encoding: UTF-8
-LazyData: true
 Depends:
     R (>= 4.1.0)
 Imports:
@@ -17,4 +18,4 @@ Imports:
 Suggests:
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
-RoxygenNote: 7.3.2
+Config/roxygen2/version: 8.0.0

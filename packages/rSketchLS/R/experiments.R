@@ -1,3 +1,27 @@
+#' Run repeated sketched least-squares experiments
+#'
+#' Generates a synthetic overdetermined least-squares problem and evaluates a
+#' randomized sketching method over a grid of sketch sizes.
+#'
+#' @param n Integer number of rows in the synthetic design matrix.
+#' @param d Integer number of columns in the synthetic design matrix.
+#' @param s_values Integer vector of sketch sizes to evaluate.
+#' @param trials Integer number of randomized trials per sketch size.
+#' @param noise_level Numeric standard deviation of additive Gaussian noise.
+#' @param method Sketch family passed to [sketch_lstsq()].
+#' @param seed Optional random seed for reproducibility.
+#'
+#' @return A list containing the experiment `history`, reference solution,
+#'   true coefficient vector, generated data, noise level, trial count, and
+#'   method.
+#'
+#' @examples
+#' out <- sketch_lstsq_experiment(
+#'   n = 20, d = 4, s_values = c(8, 12), trials = 2, seed = 1
+#' )
+#' out$history
+#'
+#' @export
 sketch_lstsq_experiment <- function(
     n = 100L,
     d = 10L,
@@ -51,6 +75,22 @@ sketch_lstsq_experiment <- function(
     )
 }
 
+#' Run Gaussian sketched least-squares experiments
+#'
+#' Convenience wrapper around [sketch_lstsq_experiment()] using Gaussian
+#' sketches.
+#'
+#' @inheritParams sketch_lstsq_experiment
+#'
+#' @return A list in the same format as [sketch_lstsq_experiment()].
+#'
+#' @examples
+#' out <- gaussian_lstsq_experiment(
+#'   n = 20, d = 4, s_values = c(8, 12), trials = 2, seed = 1
+#' )
+#' out$history
+#'
+#' @export
 gaussian_lstsq_experiment <- function(
     n = 100L,
     d = 10L,
@@ -62,9 +102,26 @@ gaussian_lstsq_experiment <- function(
     sketch_lstsq_experiment(
         n = n, d = d, s_values = s_values, trials = trials,
         noise_level = noise_level, method = "gaussian", seed = seed
-    )
+)
 }
 
+#' Run SRHT sketched least-squares experiments
+#'
+#' Convenience wrapper around [sketch_lstsq_experiment()] using SRHT sketches.
+#' If `n` is not a power of two, it is rounded up before generating the
+#' synthetic problem.
+#'
+#' @inheritParams sketch_lstsq_experiment
+#'
+#' @return A list in the same format as [sketch_lstsq_experiment()].
+#'
+#' @examples
+#' out <- srht_lstsq_experiment(
+#'   n = 16, d = 4, s_values = c(8, 12), trials = 2, seed = 1
+#' )
+#' out$history
+#'
+#' @export
 srht_lstsq_experiment <- function(
     n = 128L,
     d = 10L,

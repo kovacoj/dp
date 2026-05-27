@@ -140,13 +140,25 @@ grid points, or lagged features into one multivariate vector, thereby increasing
 and making the covariance estimation problem dimensionally harder.
 
 The CCCma dataset is modest in size compared to full CMIP6 archives
-\cite{eyring2016cmip6}, but it has the right structure for a first application-facing
-test: the historical and future periods are already separated, the observational
-reference is provided, and the number of variables is large enough to make a
-low-rank approach potentially interesting. In particular, the dependence between
-precipitation and the thermodynamic variables is known to be poorly captured by
-GCMs, which gives the covariance-transport step a concrete target
-\cite{francois2020multivariate}.
+\cite{eyring2016cmip6}, but it has the right structure for a first
+application-facing test: the historical and future periods are already separated,
+the observational reference is provided, and the number of variables is large
+enough to make a low-rank approach potentially interesting. In particular, the
+dependence between precipitation and the thermodynamic variables is known to be
+poorly captured by GCMs, which gives the covariance-transport step a concrete
+target \cite{francois2020multivariate}.
+
+It must be noted, however, that the basic CCCma configuration includes only
+precipitation, temperature, and sea-level pressure, giving \(p = 3\). This is too
+small for a meaningful low-rank regime: with only three columns, the full
+covariance is a \(3 \times 3\) matrix whose randomized low-rank approximation
+offers no computational advantage. The dataset is therefore useful as a first
+functional test of the pipeline --- verifying that the transport map can be built
+and applied without error --- but not as a demonstration of the computational
+benefit of randomized low-rank approximation. To make the low-rank setting
+meaningful, one must construct larger multivariate states by combining variables,
+locations, lags, seasons, or spatial neighborhoods, thereby increasing \(p\) and
+making the covariance estimation problem dimensionally harder.
 
 For the present thesis, the dataset is used in two ways. First, it provides the
 real-data input for the full \texttt{randMBC} pipeline. Second, it informs the design
@@ -193,6 +205,25 @@ This explicit workflow is useful because it makes clear which part of the method
 meant to carry the numerical linear algebra: the covariance approximation and
 transport layer (steps 3--6), not the entire post-processing pipeline at once.
 
+A few remarks on the latent-space construction and rank restoration are in order.
+In step~2, both the historical model data \(\widetilde X_h\) and the reference data
+\(Y_h\) are Gaussianized using their own empirical marginal distributions: the
+rank transform for \(\widetilde X_h\) is computed from the ranks of
+\(\widetilde X_h\) itself, and similarly for \(Y_h\). The future sample
+\(\widetilde X_f\) is Gaussianized using its own ranks, which is natural because
+the reference distribution for the future period is not available. This choice
+means that the latent future scores \(Z_f\) inherit the rank structure of the
+QDM-corrected marginals.
+
+In step~7, the rank rearrangement restores the QDM-corrected marginal quantiles
+exactly. Because only the ranks of \(Z_f^{\mathrm{corr}}\) are used, the
+transport-map perturbation changes the ordering of the corrected values but not
+their magnitudes. This is why rank restoration preserves QDM-corrected marginals
+by construction: the set of values in each column of \(\widetilde X_f\) is
+unchanged; only their assignment to time indices is altered. The dependence
+correction is therefore confined to the copula structure, leaving the marginal
+distributions intact.
+
 The local R package \texttt{randMBC} implements precisely this decomposition. It
 exposes a deterministic marginal-correction and rank-restoration wrapper around a
 randomized covariance-transport core. The main entry point
@@ -203,7 +234,7 @@ returns the corrected future sample together with operator-level diagnostics
 
 \section{Randomized Covariance Transport}
 
-The thesis does not propose a universal replacement for methods such as MBCn.
+The thesis does not propose that covariance transport replaces methods such as MBCn.
 Its narrower proposal is a covariance-based dependence correction step that can be
 compressed by randomized low-rank approximation and analyzed in mixed precision.
 The attraction of this approach is not only speed. It is also that the operator
@@ -318,7 +349,7 @@ The main sweeps are:
 
 \section{Results Framework}
 
-At the present stage of writing, the climate-facing experiments have been designed
+The climate-facing experiments have been designed
 and the software infrastructure is in place, but the full numerical results are not
 yet available. The following describes the expected structure of the results and the
 interpretive framework within which they should be read.

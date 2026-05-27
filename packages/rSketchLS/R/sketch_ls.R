@@ -1,3 +1,27 @@
+#' Solve a least-squares problem with a randomized sketch
+#'
+#' Forms a sketching matrix, solves the compressed least-squares problem
+#' \eqn{\min_x \|SAx - Sb\|_2}, and reports diagnostics on the residual in
+#' the original problem.
+#'
+#' @param A Numeric design matrix with more rows than columns.
+#' @param b Numeric response vector with length equal to `nrow(A)`.
+#' @param s Integer sketch size. If `NULL`, defaults to `min(nrow(A), 2 *
+#'   (ncol(A) + 1))`.
+#' @param method Sketch family. One of `"gaussian"`, `"rademacher"`, or
+#'   `"srht"`.
+#'
+#' @return A list with the coefficient vector `x`, residual vector,
+#'   residual norm, sketched-system condition number, sketch size, and method.
+#'
+#' @examples
+#' set.seed(1)
+#' A <- matrix(rnorm(80), nrow = 20)
+#' b <- rnorm(20)
+#' fit <- sketch_lstsq(A, b, s = 10, method = "gaussian")
+#' fit$residual_norm
+#'
+#' @export
 sketch_lstsq <- function(A, b, s = NULL, method = c("gaussian", "rademacher", "srht")) {
     method <- match.arg(method)
 

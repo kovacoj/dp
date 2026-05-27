@@ -1,3 +1,31 @@
+#' Solve a sketched least-squares problem with simulated mixed precision
+#'
+#' Builds a randomized sketch, rounds selected intermediate quantities to
+#' simulated lower precision, and solves the resulting sketched least-squares
+#' problem.
+#'
+#' @param A Numeric design matrix.
+#' @param b Numeric response vector with length equal to `nrow(A)`.
+#' @param s Integer sketch size. If `NULL`, defaults to `min(nrow(A), 2 *
+#'   (ncol(A) + 1))`.
+#' @param method Sketch family. One of `"gaussian"`, `"rademacher"`, or
+#'   `"srht"`.
+#' @param sketch_prec Precision used for the sketch and sketched products.
+#'   Passed to [fl_round()].
+#' @param solve_prec Precision used before solving the sketched system. Passed
+#'   to [fl_round()].
+#'
+#' @return A list with the coefficient vector `x`, residual diagnostics,
+#'   sketched-system condition number, sketch settings, and precision settings.
+#'
+#' @examples
+#' set.seed(1)
+#' A <- matrix(rnorm(80), nrow = 20)
+#' b <- rnorm(20)
+#' fit <- sketch_lstsq_mixed(A, b, s = 10, sketch_prec = "single")
+#' fit$residual_norm
+#'
+#' @export
 sketch_lstsq_mixed <- function(
     A,
     b,
@@ -55,6 +83,28 @@ sketch_lstsq_mixed <- function(
     )
 }
 
+#' Refine a mixed-precision sketched least-squares solution
+#'
+#' Computes an initial mixed-precision sketched solution and applies residual
+#' correction steps using the same sketch.
+#'
+#' @inheritParams sketch_lstsq_mixed
+#' @param ref_prec Precision used when forming residuals during refinement.
+#'   Passed to [fl_round()].
+#' @param ref_steps Integer number of refinement steps.
+#'
+#' @return A list with the refined coefficient vector, residual diagnostics,
+#'   sketch and precision settings, and `ref_history`, a matrix recording the
+#'   refinement step, residual norm, and solution norm.
+#'
+#' @examples
+#' set.seed(1)
+#' A <- matrix(rnorm(80), nrow = 20)
+#' b <- rnorm(20)
+#' fit <- sketch_refine(A, b, s = 10, sketch_prec = "single", ref_steps = 2)
+#' fit$ref_history
+#'
+#' @export
 sketch_refine <- function(
     A,
     b,

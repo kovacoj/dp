@@ -1,0 +1,171 @@
+\chapter{Atmospheric Phenomena and Climate-Model Data}
+\label{ch:atmospheric}
+
+The previous chapters isolate the numerical core of the thesis: randomized
+approximation, mixed precision, least-squares geometry, and regularized
+covariance transport. Before returning to the concrete bias-correction workflow,
+it is useful to make explicit what kind of atmospheric structure the application
+is meant to represent. The purpose of this chapter is therefore contextual. It
+does not shift the thesis away from numerical linear algebra; rather, it explains
+why the covariance and dependence operators used later are meaningful objects in
+climate-model post-processing.
+
+Atmospheric data are multivariate by nature. Temperature, precipitation, wind,
+humidity, radiation, pressure, and derived extremes are not independent columns in
+a table. They are coupled through thermodynamic, radiative, hydrological, and
+dynamical processes. A statistical correction method that adjusts only marginal
+distributions may therefore improve each variable separately while leaving the
+joint state physically implausible. This is the basic reason why multivariate
+bias correction is a relevant application for the covariance-transport methods
+studied in this thesis.
+
+\section{Weather, Climate, and Extremes}
+
+The climate-science motivation is strongest for variables and events whose
+impacts depend on joint behaviour. The IPCC Sixth Assessment Report emphasizes
+that human-induced climate change is already affecting weather and climate
+extremes, including hot extremes, heavy precipitation, droughts, storms, and
+compound events \cite{ipcc2021ar6wg1}. These phenomena are not only changes in
+individual means. They involve changes in tails, spatial extent, persistence,
+co-occurrence, and physical drivers.
+
+Temperature extremes provide the simplest example. A bias correction that
+matches daily temperature quantiles may still distort the relationship between
+daily minimum and maximum temperature, humidity, radiation, or wind. Heavy
+precipitation is similar. Its statistical behaviour depends not only on the
+marginal distribution of rainfall, but also on circulation, moisture availability,
+convective activity, orographic forcing, and temporal clustering. Droughts add a
+further layer: precipitation deficits, evapotranspiration, soil moisture, and
+radiative forcing interact over longer time scales. Compound events, such as
+concurrent heat and drought, make the multivariate nature of the problem
+explicit.
+
+For the present thesis, this motivates a narrow but useful modelling stance. We
+do not attempt to model all atmospheric dynamics. Instead, we ask whether a
+dependence-correction layer based on covariance operators can preserve or improve
+some second-order structure after marginal correction. This is less ambitious
+than a full physical or distributional model, but it gives a concrete numerical
+object whose approximation and finite-precision behaviour can be studied.
+
+\section{Regional Reanalysis and Central Europe}
+
+The new local literature also gives a more concrete regional setting. Beranova
+et al. validate an ALADIN-Climate regional reanalysis over Europe, with emphasis
+on Central Europe \cite{beranova2025aladin}. The model is based on the ALARO
+configuration, uses a convection-permitting horizontal resolution of \(2.3\) km,
+and is evaluated over the period 1990--2014 against ground-based meteorological
+observations. The variables considered are exactly the kinds of fields that make
+multivariate post-processing nontrivial: daily temperature, precipitation,
+relative humidity, wind speed, and global radiation.
+
+The validation results are relevant to the thesis for two reasons. First, they
+show that high-resolution regional reanalyses can be valuable data sources for
+Central European climate studies, especially where global reanalyses are too
+coarse to resolve local terrain and mesoscale structure. Second, they show that
+even high-resolution reanalyses have systematic, variable-dependent biases. In
+the ALADIN-Climate validation, mean daily temperature biases are relatively small,
+but minimum daily temperature is generally overestimated and maximum daily
+temperature underestimated. Winter precipitation totals are overestimated by
+nearly \(50\%\) on average, partly through an overestimation of wet days. Relative
+humidity, wind speed, and global radiation also show systematic seasonal and
+spatial biases \cite{beranova2025aladin}.
+
+These findings are useful because they give the application chapter a realistic
+interpretation of the columns in the data matrix. The variables are not abstract
+features. They are atmospheric quantities with different error mechanisms:
+microphysics and wet-day frequency for precipitation, boundary-layer and
+roughness effects for wind, cloud and radiation processes for global radiation,
+and diurnal-cycle errors for minimum and maximum temperature. A multivariate
+correction method should therefore be evaluated not only by numerical error, but
+also by whether it preserves relationships among these physically linked
+quantities.
+
+\section{Variables as a Multivariate State}
+
+The data model used later can now be read physically. The application chapter
+uses historical model data, future model data, and historical reference data,
+\[
+	X_h \in \R^{n \times p}, \qquad
+	X_f \in \R^{m \times p}, \qquad
+	Y_h \in \R^{n \times p}.
+\]
+The column dimension \(p\) is not fixed by the theory. It may encode variables at
+one site, several nearby locations, lagged time features, seasonal indicators, or
+blocks of spatial grid points. The same algebraic object therefore covers several
+application designs:
+\begin{itemize}
+	\item intervariable dependence, such as temperature--humidity or
+	      precipitation--radiation relationships;
+	\item spatial dependence, such as correlation between nearby grid cells or
+	      stations;
+	\item temporal dependence, represented through lagged columns;
+	\item local multivariate states combining variables, locations, and lags.
+\end{itemize}
+
+After marginal correction, the randomized covariance-transport method acts on a
+latent rank-normal representation. The covariance operators
+\[
+	C_X = \frac1n Z_X^\top Z_X,
+	\qquad
+	C_Y = \frac1n Z_Y^\top Z_Y
+\]
+should therefore be interpreted as summaries of dependence in this latent state
+space. They are not a full physical description of the atmosphere. They are a
+numerically tractable representation of second-order structure after the
+univariate part of the bias correction has already been handled.
+
+This interpretation also clarifies why the spectrum of the covariance operator
+matters. Atmospheric fields often contain coherent spatial and intervariable
+patterns, but they also contain localized extremes and small-scale variability.
+If the dominant dependence is well approximated by a low-dimensional subspace,
+then randomized low-rank methods may be effective. If the spectrum is flat or the
+important structure lies in weak but physically meaningful modes, low-rank
+compression can fail even when the randomized algorithm behaves as expected
+mathematically.
+
+\section{Implications for Covariance Transport}
+
+The atmospheric context gives the covariance-transport map a clear but limited
+role. The map
+\[
+	T_\lambda
+	=
+	(C_X+\lambda I)^{-1/2}(C_Y+\lambda I)^{1/2}
+\]
+is a dependence-correction operator in latent space. It is designed to move the
+second-order structure of the corrected model sample toward that of the
+reference sample. It can therefore plausibly affect intervariable correlations,
+spatial covariance, and some low-order signatures of compound behaviour.
+
+At the same time, its limitations are structural. Covariance transport does not
+model causality, atmospheric circulation, event sequencing, or nonlinear tail
+dependence. It does not by itself guarantee that a corrected heatwave, drought,
+or heavy-precipitation episode is dynamically plausible. This is why the thesis
+uses covariance transport as a numerical core rather than as a complete
+climate-science model. The method is valuable only if its narrower target is
+stated honestly: a compressed and analyzable dependence-correction layer after
+marginal adjustment.
+
+This also explains the diagnostics used later. Operator-level errors such as
+\(\|C-\widehat C\|_2\) and
+\(\|T_\lambda-\widehat T_\lambda\|_2\) measure whether the numerical method
+approximates its own target. Application-facing diagnostics, such as correlation
+error, spatial or temporal autocorrelation error, and multivariate discrepancy
+measures, ask whether that target is useful for the atmospheric data. Both levels
+are necessary. A small transport error is not automatically a successful climate
+correction, and a useful climate correction may tolerate an operator error that
+looks large in spectral norm.
+
+\section{Role in the Thesis}
+
+The role of this chapter is to bridge the mathematical and application-facing
+parts of the thesis. The central contributions remain the perturbation analysis,
+the randomized low-rank approximation, and the mixed-precision error
+decomposition. Atmospheric phenomena enter as the reason why the data matrices
+have multivariate structure and why dependence correction is worth studying.
+
+In the next chapter, this context is specialized to a bias-correction workflow.
+The atmospheric variables become columns of the data matrices, marginal
+adjustment is separated from dependence correction, and the covariance-transport
+operator from \Cref{ch:randcovtransport} becomes the numerical layer tested in
+the climate-model application.

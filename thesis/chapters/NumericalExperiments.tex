@@ -21,12 +21,12 @@ conditioning, regularization, and arithmetic.
 The experiments are naturally divided into two parts. Part I studies sketched
 least-squares solvers as the first model problem. Part II studies randomized
 covariance transport as the climate-facing operator problem introduced in
-\Cref{ch:randcovtransport}. The repository currently implements mainly the first
+\Cref{ch:randcovtransport}. The experiments currently cover mainly the first
 part, but the second part already has a clear mathematical specification.
 
 For the least-squares experiments, the main question is how the quality of a
 sketched solve changes as the sketch dimension varies and as the sketch family
-changes. The repository currently tracks four quantities:
+changes. The experiments track four quantities:
 \begin{itemize}
 	\item the mean absolute error of the averaged sketch solution,
 	\item the residual ratio relative to a reference least-squares solve,
@@ -48,7 +48,7 @@ concrete computational pipeline.
 \section{Synthetic Least-Squares Model}
 \label{sec:synth_ls_model}
 
-The current implementations use one common synthetic model. A matrix
+The implementations use one common synthetic model. A matrix
 \(A \in \R^{n \times d}\) is generated with independent standard normal entries,
 and the reference solution is chosen as
 \[
@@ -80,7 +80,7 @@ squares under controlled conditions.
 
 \section{Implemented Sketch Families}
 
-The repository currently supports three sketch families in the main R package:
+The experiments support three sketch families in the main R package:
 Gaussian sketches, Rademacher sketches, and the SRHT. The Octave prototypes
 currently cover Gaussian sketches and the SRHT. This reflects the current state of
 the software rather than a conceptual distinction. The R package is the intended
@@ -132,10 +132,10 @@ trial solutions.
 \section{Parameter Sweeps}
 
 The experiments vary the sketch dimension \(s\) over a prescribed range and
-repeat the randomized solve several times for each value. In the current R code,
-the generic routine \texttt{sketch\_lstsq\_experiment} accepts the parameters \(n\),
+repeat the randomized solve several times for each value. The main routine
+\texttt{sketch\_lstsq\_experiment} accepts the parameters \(n\),
 \(d\), a vector of sketch sizes, a trial count, a noise level, and the sketch family.
-Specialized wrappers currently expose Gaussian and SRHT runs directly, but the
+Specialized wrappers expose Gaussian and SRHT runs directly, but the
 underlying routine already supports all three sketch families.
 
 The Octave scripts implement the same logic in a more direct form. The Gaussian
@@ -152,7 +152,7 @@ interpretable.
 
 \section{Precision-Sensitivity Baseline}
 
-The mixed-precision part of the repository is still at an early stage, but the
+The mixed-precision part of the experimental framework is under active development, but the
 current Octave Gaussian experiment already contains a useful first comparison. It
 can run either in ordinary double precision or, when the symbolic package is
 available, in a higher-precision mode used as a surrogate for reduced rounding
@@ -169,7 +169,7 @@ diagnostic baseline for the later mixed-precision work.
 
 \section{Least-Squares Sketch-Size Sweep}
 
-The first implemented experiment tests how the quality of a sketched solve changes as the sketch dimension increases. The setup follows the synthetic model from \Cref{sec:synth_ls_model} with \(n=1024\), \(d=20\), a planted solution \(x_\star = \mathbf{1}\), and no noise. A Gaussian sketch is used, the sketch dimension \(s\) is swept over the values
+The first implemented experiment tests how the quality of a sketched solve changes as the sketch dimension increases. The setup follows the synthetic model from \Cref{sec:synth_ls_model} with \(n=1024\), \(d=20\), a planted solution \(x_\star = \mathbf{1}\), and additive Gaussian noise scaled to a signal-to-noise ratio of approximately \(10^{4}\), so that the reference residual is nonzero and the residual ratio is a meaningful diagnostic. A Gaussian sketch is used, the sketch dimension \(s\) is swept over the values
 \[
 	s \in \{30,\,40,\,60,\,80,\,100,\,150,\,200,\,300\},
 \]
@@ -180,15 +180,15 @@ and \(20\) independent trials are drawn for each value.
 \begin{figure}[t]
 	\centering
 	\includegraphics[width=0.85\textwidth]{figures/ls_res_ratio_vs_s.pdf}
-	\caption{Mean residual ratio versus sketch size for Gaussian sketching of a consistent least-squares problem with \(n=1024\), \(d=20\). Error bars indicate one standard deviation across \(20\) independent trials.}
+	\caption{Mean residual ratio versus sketch size for Gaussian sketching of a noisy least-squares problem with \(n=1024\), \(d=20\). Error bars indicate one standard deviation across \(20\) independent trials.}
 	\label{fig:ls_res_ratio}
 \end{figure}
 
-\Cref{tab:ls_sweep} reports the mean residual ratio and mean relative solution error for each sketch size. Two observations are worth highlighting. First, the residual ratio approaches one much more slowly than the solution error approaches machine precision: the residual is still approximately \(1.15\) at \(s=150\), whereas the solution error is already at the \(10^{-16}\) level. This confirms the theoretical expectation that residual preservation and solution preservation are different diagnostics, and that the solution error is governed mainly by the conditioning of \(SA\) rather than by the residual quality alone. Second, the condition number \(\kappa_2(SA)\) (not shown) increases with \(s\), but the solution error still improves because the overall perturbation scale decreases faster than the conditioning deteriorates.
+\Cref{tab:ls_sweep} reports the mean residual ratio and mean relative solution error for each sketch size. Two observations are worth highlighting. First, the residual ratio approaches one much more slowly than the solution error approaches machine precision: the residual ratio is still approximately \(1.15\) at \(s=150\), whereas the solution error is already at the \(10^{-16}\) level. This confirms the theoretical expectation that residual preservation and solution preservation are different diagnostics, and that the solution error is governed mainly by the conditioning of \(SA\) rather than by the residual quality alone. Second, the solution error still improves with \(s\) even though the conditioning of \(SA\) may vary, because the overall perturbation scale decreases with the sketch dimension.
 
 \begin{table}[t]
 	\centering
-	\caption{Least-squares sketch-size sweep: Gaussian sketch, \(n=1024\), \(d=20\), \(20\) trials per sketch size.}
+	\caption{Least-squares sketch-size sweep: Gaussian sketch, \(n=1024\), \(d=20\), \(20\) trials per sketch size. Residual ratio is \(\|A\hat x - b\|_2 / \|A x_{\mathrm{ref}} - b\|_2\); solution error is \(\|\hat x - x_{\mathrm{ref}}\|_2 / \|x_{\mathrm{ref}}\|_2\).}
 	\label{tab:ls_sweep}
 	\begin{tabular}{rcc}
 		\toprule
@@ -221,7 +221,7 @@ solution metrics stabilize. Conversely, a dense Gaussian sketch may look cleaner
 numerically while being less attractive computationally. The experiments are
 designed to make this tradeoff visible.
 
-At present, this chapter is therefore best read as a methodology
+This chapter is therefore best read as a methodology
 and interpretation chapter. The benchmark structure is already concrete and
 implemented for least squares, and the mixed-precision side is still being
 expanded. Even so, the framework is already explicit enough to support the main
@@ -287,8 +287,8 @@ the working hypothesis, the matrix or data model, the parameters being swept, an
 the diagnostics used to decide success or failure. That structure keeps the
 experimental chapter tied to the theorem statements rather than to ad hoc plotting.
 
-The repository now contains a first concrete realization of this program in
-\texttt{experiments/benchmark\_randmbc.R}. The current benchmark is still synthetic,
+The first concrete realization of this program is in
+\texttt{experiments/benchmark\_randmbc.R}. The benchmark is still synthetic,
 but it already compares three relevant levels: the deterministic full
 covariance-transport baseline, selected reference methods from the vendored
 \texttt{MBC} package, and the current randomized \texttt{randMBC} backend under
@@ -357,7 +357,7 @@ The second set of experiments tests the theory from \Cref{ch:randcovtransport} d
 
 \begin{table}[t]
 	\centering
-	\caption{Covariance transport sweep: exponential spectrum, \(p=30\), double precision, Gaussian sketch, \(10\) trials. Mean covariance error and transport error.}
+	\caption{Covariance transport sweep: exponential spectrum, \(p=30\), double precision, Gaussian sketch, \(10\) trials. All errors are absolute: \(\|C - \widehat C\|_2\) and \(\|T_\lambda - \widehat T_\lambda\|_2\). Means over trials; per-trial variability not yet available in post-processed form.}
 	\label{tab:ct_double}
 	\begin{tabular}{rccc}
 		\toprule
@@ -394,7 +394,7 @@ This finding is simultaneously reassuring and limiting. It confirms that single 
 
 \begin{table}[t]
 	\centering
-	\caption{Precision comparison for selected parameter combinations. Mean transport error over \(10\) trials.}
+	\caption{Precision comparison for selected parameter combinations. Mean absolute transport error \(\|T_\lambda - \widehat T_\lambda\|_2\) over \(10\) trials. Per-trial variability not yet available.}
 	\label{tab:ct_precision}
 	\begin{tabular}{rccc}
 		\toprule
@@ -415,7 +415,7 @@ This finding is simultaneously reassuring and limiting. It confirms that single 
 \begin{figure}[t]
 	\centering
 	\includegraphics[width=0.85\textwidth]{figures/ct_transport_error_vs_rank.pdf}
-	\caption{Mean transport error versus target rank for three regularization levels (exponential spectrum, \(p=30\), double precision, Gaussian sketch).}
+	\caption{Mean absolute transport error versus target rank for three regularization levels (exponential spectrum, \(p=30\), double precision, Gaussian sketch). The vertical axis is logarithmic.}
 	\label{fig:ct_transport}
 \end{figure}
 
