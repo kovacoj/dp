@@ -9,9 +9,9 @@ solutions, covariance approximations, and transport errors. The experiments also
 provide the first controlled setting in which the floating-point questions from
 \Cref{ch:mixedprecision} can be studied in the same benchmark.
 
-At the present stage, the experiments are intentionally synthetic. This is useful.
-By generating the data matrix, covariance structure, and reference solution
-directly, we can separate the effect of the sketch from the complications of a
+The experiments use intentionally synthetic data. This is useful:
+by generating the data matrix, covariance structure, and reference solution
+directly, we separate the effect of the sketch from the complications of a
 downstream application. The experiments are therefore simple enough to interpret
 and still rich enough to show the interaction between embedding quality,
 conditioning, regularization, and arithmetic.
@@ -46,6 +46,7 @@ test how approximation quality, solver sensitivity, and arithmetic interact in o
 concrete computational pipeline.
 
 \section{Synthetic Least-Squares Model}
+\label{sec:synth_ls_model}
 
 The current implementations use one common synthetic model. A matrix
 \(A \in \R^{n \times d}\) is generated with independent standard normal entries,
@@ -72,7 +73,7 @@ provides the baseline against which the sketched residuals are compared. This is
 important because each trial is measured against the corresponding unsketched
 least-squares solve.
 
-The synthetic model is deliberately modest. It does not yet attempt to mimic the
+The synthetic model is deliberately modest. It does not attempt to mimic the
 spectral structure of a climate-data operator or the coherence patterns of an
 application matrix. Its role is to isolate the basic mechanisms of randomized least
 squares under controlled conditions.
@@ -155,7 +156,7 @@ The mixed-precision part of the repository is still at an early stage, but the
 current Octave Gaussian experiment already contains a useful first comparison. It
 can run either in ordinary double precision or, when the symbolic package is
 available, in a higher-precision mode used as a surrogate for reduced rounding
-error. This is not yet a full mixed-precision implementation in the sense discussed
+error. This is not a full mixed-precision implementation in the sense discussed
 in \Cref{ch:mixedprecision}. It is a controlled way to ask whether a visible loss of
 accuracy is mainly geometric or mainly arithmetic.
 
@@ -163,10 +164,47 @@ That distinction matters. If increasing arithmetic precision leaves the curves
 essentially unchanged, the dominant limitation is likely the sketch itself or the
 conditioning of the reduced problem. If the higher-precision run materially
 improves the behavior, then floating-point perturbations are already visible at this
-synthetic scale. Therefore, the current precision experiment should be viewed as a
+synthetic scale. The current precision experiment is therefore best viewed as a
 diagnostic baseline for the later mixed-precision work.
 
-\section{How the Results Should Be Read}
+\section{Least-Squares Sketch-Size Sweep}
+
+The first implemented experiment tests how the quality of a sketched solve changes as the sketch dimension increases. The setup follows the synthetic model from \Cref{sec:synth_ls_model} with \(n=1024\), \(d=20\), a planted solution \(x_\star = \mathbf{1}\), and no noise. A Gaussian sketch is used, the sketch dimension \(s\) is swept over the values
+\[
+	s \in \{30,\,40,\,60,\,80,\,100,\,150,\,200,\,300\},
+\]
+and \(20\) independent trials are drawn for each value.
+
+\Cref{fig:ls_res_ratio} shows the mean residual ratio as a function of \(s\). The expected qualitative behaviour is clearly visible: the residual ratio decreases toward one as the sketch dimension grows, with the most rapid improvement occurring for \(s\) between two and five times the column dimension. The error bars (one standard deviation across trials) shrink as \(s\) grows, reflecting the reduced variability of the embedding at larger dimensions.
+
+\begin{figure}[t]
+	\centering
+	\includegraphics[width=0.85\textwidth]{figures/ls_res_ratio_vs_s.pdf}
+	\caption{Mean residual ratio versus sketch size for Gaussian sketching of a consistent least-squares problem with \(n=1024\), \(d=20\). Error bars indicate one standard deviation across \(20\) independent trials.}
+	\label{fig:ls_res_ratio}
+\end{figure}
+
+\Cref{tab:ls_sweep} reports the mean residual ratio and mean relative solution error for each sketch size. Two observations are worth highlighting. First, the residual ratio approaches one much more slowly than the solution error approaches machine precision: the residual is still approximately \(1.15\) at \(s=150\), whereas the solution error is already at the \(10^{-16}\) level. This confirms the theoretical expectation that residual preservation and solution preservation are different diagnostics, and that the solution error is governed mainly by the conditioning of \(SA\) rather than by the residual quality alone. Second, the condition number \(\kappa_2(SA)\) (not shown) increases with \(s\), but the solution error still improves because the overall perturbation scale decreases faster than the conditioning deteriorates.
+
+\begin{table}[t]
+	\centering
+	\caption{Least-squares sketch-size sweep: Gaussian sketch, \(n=1024\), \(d=20\), \(20\) trials per sketch size.}
+	\label{tab:ls_sweep}
+	\begin{tabular}{rcc}
+		\toprule
+		\(s\) & Mean residual ratio & Mean rel.\ solution error \\
+		\midrule
+		30    & 3.049               & \(1.18 \times 10^{-15}\)  \\
+		40    & 1.839               & \(7.40 \times 10^{-16}\)  \\
+		60    & 1.851               & \(7.56 \times 10^{-16}\)  \\
+		80    & 1.829               & \(7.37 \times 10^{-16}\)  \\
+		100   & 1.295               & \(5.64 \times 10^{-16}\)  \\
+		150   & 1.152               & \(5.20 \times 10^{-16}\)  \\
+		200   & 1.096               & \(4.88 \times 10^{-16}\)  \\
+		300   & 1.003               & \(4.79 \times 10^{-16}\)  \\
+		\bottomrule
+	\end{tabular}
+\end{table}
 
 The main qualitative expectation is straightforward. As the sketch dimension
 grows, the residual ratio should approach one, because the compressed problem
@@ -183,7 +221,7 @@ solution metrics stabilize. Conversely, a dense Gaussian sketch may look cleaner
 numerically while being less attractive computationally. The experiments are
 designed to make this tradeoff visible.
 
-At the present stage, this chapter should therefore be read mainly as a methodology
+At present, this chapter is therefore best read as a methodology
 and interpretation chapter. The benchmark structure is already concrete and
 implemented for least squares, and the mixed-precision side is still being
 expanded. Even so, the framework is already explicit enough to support the main
@@ -192,10 +230,10 @@ studied in one coherent numerical-analysis picture.
 
 \section{Covariance-Transport Experiment Program}
 
-The later experimental layer of the thesis should test the theory from
+The second experimental layer of the thesis tests the theory from
 \Cref{ch:randcovtransport} just as directly as the least-squares benchmarks test
 the embedding theory from \Cref{ch:randls}. Instead of tracking only the
-compressed least-squares residual, one should now measure the quality of a
+compressed least-squares residual, one now measures the quality of a
 randomized low-rank covariance approximation and the perturbation it induces in
 the regularized transport map.
 
@@ -311,6 +349,76 @@ operators stabilizes the transport map even when the raw covariance error is
 only marginally different.  The fourth row serves as the diagnostic baseline
 for comparison.
 
+\section{Covariance Transport Results}
+
+The second set of experiments tests the theory from \Cref{ch:randcovtransport} directly. A covariance operator with exponential spectral decay is generated using \texttt{generate\_cov\_operator} with \(p=30\) and condition number \(100\). The target rank is swept over \(r \in \{5,10,15,20,25\}\), the regularization parameter over \(\lambda \in \{10^{-2}, 10^{-4}, 10^{-6}\}\), and the sketch precision over double and single. Ten independent trials are drawn for each parameter combination.
+
+\Cref{tab:ct_double} reports the mean covariance error and transport error for double precision. The most important observation is the strong dependence on \(\lambda\): at \(\lambda = 10^{-6}\), the transport error is two orders of magnitude larger than at \(\lambda = 10^{-2}\) even though the covariance errors are comparable. This is exactly the inverse-square-root amplification mechanism predicted by \Cref{thm:cov_transport_perturbation} in \Cref{ch:randcovtransport}. The covariance error itself decreases slowly with rank, reflecting the exponential but not extremely steep spectral decay.
+
+\begin{table}[t]
+	\centering
+	\caption{Covariance transport sweep: exponential spectrum, \(p=30\), double precision, Gaussian sketch, \(10\) trials. Mean covariance error and transport error.}
+	\label{tab:ct_double}
+	\begin{tabular}{rccc}
+		\toprule
+		Rank \(r\) & \(\lambda\) & Mean \(\|C - \widehat C\|_2\) & Mean \(\|T_\lambda - \widehat T_\lambda\|_2\) \\
+		\midrule
+		5          & \(10^{-2}\) & 0.87                          & 2.35                                          \\
+		5          & \(10^{-4}\) & 0.85                          & 25.5                                          \\
+		5          & \(10^{-6}\) & 0.84                          & 257.5                                         \\
+		\midrule
+		10         & \(10^{-2}\) & 0.75                          & 2.09                                          \\
+		10         & \(10^{-4}\) & 0.76                          & 23.1                                          \\
+		10         & \(10^{-6}\) & 0.72                          & 232.2                                         \\
+		\midrule
+		15         & \(10^{-2}\) & 0.68                          & 1.66                                          \\
+		15         & \(10^{-4}\) & 0.65                          & 17.8                                          \\
+		15         & \(10^{-6}\) & 0.67                          & 189.4                                         \\
+		\midrule
+		20         & \(10^{-2}\) & 0.69                          & 1.28                                          \\
+		20         & \(10^{-4}\) & 0.65                          & 13.6                                          \\
+		20         & \(10^{-6}\) & 0.72                          & 134.5                                         \\
+		\midrule
+		25         & \(10^{-2}\) & 0.65                          & 1.13                                          \\
+		25         & \(10^{-4}\) & 0.65                          & 8.89                                          \\
+		25         & \(10^{-6}\) & 0.66                          & 91.0                                          \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+\subsection{Precision comparison}
+
+\Cref{tab:ct_precision} compares single and double precision at selected parameter combinations. The key finding is that single and double precision produce nearly identical results across all tested regimes. At rank 20 and \(\lambda = 10^{-6}\), for example, the transport errors are \(134.5\) (double) and \(136.6\) (single). This is not an accident: in all tested cases, the randomized truncation error and the regularization-dominated amplification error are both much larger than the arithmetic precision floor. The floating-point contribution is effectively hidden beneath the approximation error, exactly as the balancing-inexactness principle predicts.
+
+This finding is simultaneously reassuring and limiting. It confirms that single precision is safe in the current approximation regime, but it also means that the present experiments cannot yet detect the precision-visible regime. To observe the crossover, one would need either a higher target rank (so that truncation error falls below the arithmetic floor) or a more aggressive regularization (so that the transport map is not dominated by the inverse-square-root instability).
+
+\begin{table}[t]
+	\centering
+	\caption{Precision comparison for selected parameter combinations. Mean transport error over \(10\) trials.}
+	\label{tab:ct_precision}
+	\begin{tabular}{rccc}
+		\toprule
+		Rank \(r\) & \(\lambda\) & Double precision & Single precision \\
+		\midrule
+		5          & \(10^{-2}\) & 2.35             & 2.38             \\
+		5          & \(10^{-6}\) & 257.5            & 259.6            \\
+		20         & \(10^{-2}\) & 1.28             & 1.33             \\
+		20         & \(10^{-6}\) & 134.5            & 136.6            \\
+		25         & \(10^{-2}\) & 1.13             & 1.10             \\
+		25         & \(10^{-6}\) & 91.0             & 86.1             \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+\Cref{fig:ct_transport} shows the mean transport error as a function of target rank for each regularization level (double precision). The curves separate dramatically by \(\lambda\), with the \(\lambda = 10^{-2}\) curve remaining near unity while the \(\lambda = 10^{-6}\) curve stays above \(80\) even at rank \(25\). This confirms that the dominant bottleneck is the inverse-square-root conditioning, not the rank of the approximation.
+
+\begin{figure}[t]
+	\centering
+	\includegraphics[width=0.85\textwidth]{figures/ct_transport_error_vs_rank.pdf}
+	\caption{Mean transport error versus target rank for three regularization levels (exponential spectrum, \(p=30\), double precision, Gaussian sketch).}
+	\label{fig:ct_transport}
+\end{figure}
+
 \section{Covariance-Transport Experiments: Part II}
 
 The second part of the experimental chapter tests the theory from
@@ -387,7 +495,7 @@ independent-subspace and shared-basis variants from
 
 \textbf{Diagnostics.}  Transport error, future-sample perturbation
 \(\|Z_f T_\lambda - Z_f \widehat T_\lambda\|_F\), and the same statistical
-diagnostics as in \Cref{ch:climate}.
+diagnostics as in \Cref{sec:application_diagnostics}.
 
 \subsection{Balancing randomized and arithmetic error}
 
@@ -404,6 +512,7 @@ residual), estimated \(\eta_{\mathrm{fp}}\) (from
 \texttt{sketch\_forward\_bound}), their ratio, and the total transport error.
 
 \section{Application-Facing Diagnostics}
+\label{sec:application_diagnostics}
 
 Once the covariance-transport experiments are connected to a climate-shaped data
 pipeline, the numerical diagnostics should be accompanied by statistical ones. At a
