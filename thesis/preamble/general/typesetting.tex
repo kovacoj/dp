@@ -1,7 +1,7 @@
 %%% Typesetting, figures, tables, etc.
 
 \ifpdftex % only for pdfLaTeX
-    \usepackage[T1]{fontenc} % better support for accented characters
+	\usepackage[T1]{fontenc} % better support for accented characters
 \fi
 \usepackage{lmodern}  % Latin Modern fonts
 \usepackage{romanbar} % Roman numerals with bars, provides `\Romanbar{...}`
@@ -27,7 +27,10 @@
 \usepackage{csquotes}            % context-sensitive quotation facilities
 
 %% Enumerate/itemize environments
-\usepackage[alwaysadjust,neverdecrease]{paralist}   % improved enumerate and itemize
-\setdefaultleftmargin{1.87em}{1.7em}{1.5em}{1em}{1em}{1em}
-\setdefaultitem{$\bullet$}{\textbullet}{\textasteriskcentered}{\textperiodcentered}
-\setdefaultenum{\bfseries (1)}{\bfseries (a)}{\bfseries (i)}{A.}
+\usepackage{enumitem}
+\setlist[enumerate]{label=\arabic*., leftmargin=*, widest=9.}
+\setlist[enumerate,2]{label=(\alph*), leftmargin=*}
+\setlist[enumerate,3]{label=\roman*., leftmargin=*}
+\setlist[itemize]{label=$\bullet$, leftmargin=*}
+\setlist[itemize,2]{label=\textbullet, leftmargin=*}
+\setlist[itemize,3]{label=\textasteriskcentered, leftmargin=*}
