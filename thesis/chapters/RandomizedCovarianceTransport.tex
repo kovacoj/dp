@@ -160,6 +160,42 @@ small core matrix \(B + \lambda I_r\), together with applications of \(Q\) and
 
 The point is not only efficiency. A low-rank approximation introduces an explicit randomized error scale. Once this scale is visible, it becomes meaningful to ask whether lower precision is acceptable because its rounding error remains smaller than the approximation error already introduced by the randomized compression.
 
+\section{Independent and Shared Reduced Bases}
+
+The randomized low-rank approximation described above produces an orthonormal basis \(Q_X\) for the dominant range of \(C_X\) and a basis \(Q_Y\) for the dominant range of \(C_Y\). When the source and target covariance operators are approximated independently, the resulting surrogates take the form
+\[
+	C_X \approx Q_X B_X Q_X^\top, \qquad C_Y \approx Q_Y B_Y Q_Y^\top,
+\]
+where \(B_X = Q_X^\top C_X Q_X\) and \(B_Y = Q_Y^\top C_Y Q_Y\) are small dense core matrices. This independent-basis construction is the natural output of two separate range-finder calls.
+
+The difficulty is that \(Q_X\) and \(Q_Y\) may span different reduced coordinate systems. Even if each covariance is approximated reasonably well in isolation, the transport map combines the inverse square root of one surrogate with the square root of the other:
+\[
+	\widehat T_\lambda
+	=
+	(Q_X B_X Q_X^\top + \lambda I)^{-1/2}
+	(Q_Y B_Y Q_Y^\top + \lambda I)^{1/2}.
+\]
+When \(Q_X \neq Q_Y\), the matrix functions are evaluated in different subspaces, and their product may be less stable than the individual factors suggest. This coordinate mismatch does not necessarily cause large errors, but it removes the algebraic simplification that would otherwise stabilize the transport map.
+
+An alternative is the \emph{shared-basis} variant. Instead of computing two separate range finders, one constructs a single orthonormal basis \(Q\) that approximately spans the union of the dominant ranges of \(C_X\) and \(C_Y\). A natural construction is to form the combined sketch matrix
+\[
+	Y_{\mathrm{joint}} = [C_X\Omega,\; C_Y\Omega]
+\]
+and compute \(Q\) as an orthonormal basis for the range of \(Y_{\mathrm{joint}}\). Both covariance operators are then projected onto this shared basis:
+\[
+	C_X \approx Q B_X Q^\top, \qquad C_Y \approx Q B_Y Q^\top,
+\]
+with \(B_X = Q^\top C_X Q\) and \(B_Y = Q^\top C_Y Q\). The regularized transport map becomes
+\[
+	\widehat T_\lambda
+	=
+	(Q B_X Q^\top + \lambda I)^{-1/2}
+	(Q B_Y Q^\top + \lambda I)^{1/2},
+\]
+and both matrix functions are now evaluated in the same reduced coordinate system. This eliminates the coordinate mismatch and is expected to reduce \(\|T_\lambda - \widehat T_\lambda\|_2\) even when the raw covariance errors \(\|C_X - \widehat C_X\|_2\) and \(\|C_Y - \widehat C_Y\|_2\) are comparable to those of the independent construction.
+
+The shared-basis variant should not be understood as universally superior. Its advantage is a hypothesis to be tested experimentally: in regimes where the low-rank approximation is already reasonably accurate, shared coordinates may stabilize the transport map enough to make precision effects visible. In regimes where the approximation itself is too coarse, neither coordinate alignment nor precision choice will rescue the method. The experiments in \Cref{ch:experiments} test this hypothesis explicitly.
+
 \section{Mixed Precision and Balancing Inexactness}
 
 This is the place where the climate application and the mixed-precision chapter meet most naturally. The important question is not whether lower precision is faster in the abstract. It is whether reduced precision changes the dependence correction less than the inexactness already present in the modeling pipeline. This is exactly the viewpoint advocated in recent mixed-precision work on balancing multiple sources of inexactness \cite{carson2026balancing,higham2022mixed}.
@@ -225,10 +261,13 @@ or more generally when the floating-point perturbation remains below the statist
 		\lesssim
 		u\,\|Z\|_2^2
 		=
-		u\,\sigma_1^2(C)\,n,
+		u\,n\,\|C\|_2
+		=
+		u\,n\,\lambda_{\max}(C),
 	\]
-	so that the floating-point perturbation scales with the unit roundoff and
-	the squared spectral norm of the data.
+	so that the floating-point perturbation scales with the unit roundoff, the
+	sample size entering the accumulation, and the spectral scale of the
+	empirical covariance.
 \end{proposition}
 
 \begin{proof}
@@ -348,6 +387,7 @@ statements.
 \end{proof}
 
 \begin{theorem}[Perturbation of covariance transport]
+	\label{thm:cov_transport_perturbation}
 	Assume that the hypotheses of the previous proposition hold. Then
 	\[
 		\|T_\lambda - \widehat T_\lambda\|_2
@@ -364,17 +404,29 @@ statements.
 		+
 		\frac{\|\widehat B^{1/2}\|_2}{2\alpha_0^{3/2}}\,\eta_A.
 	\]
-	In particular, there exists an amplification factor
-	\(K_\lambda(C_X,C_Y)\) such that
+	In particular, the amplification factor may be taken as
+	\[
+		K_\lambda(C_X,C_Y,\Delta A,\Delta B)
+		=
+		\max\!\left\{
+		\frac{\|A^{-1/2}\|_2}{2\beta_0^{1/2}},\;
+		\frac{\|\widehat B^{1/2}\|_2}{2\alpha_0^{3/2}}
+		\right\},
+	\]
+	so that
 	\[
 		\|T_\lambda - \widehat T_\lambda\|_2
-		\lesssim
-		K_\lambda(C_X,C_Y)(\eta_A + \eta_B),
+		\le
+		K_\lambda\,(\eta_A + \eta_B).
 	\]
-	where \(K_\lambda\) deteriorates as the regularized spectra approach zero.
+	When \(\|\Delta A\|_2\) and \(\|\Delta B\|_2\) are small relative to the
+	regularized spectral gaps, this behaves like a constant depending on
+	\(\lambda_{\min}(C_X+\lambda I)\) and \(\lambda_{\min}(C_Y+\lambda I)\).
+	In particular, the inverse-square-root term deteriorates at the rate
+	\(\lambda_{\min}(C_X+\lambda I)^{-3/2}\).
 \end{theorem}
 
-\begin{proof}[Proof sketch]
+\begin{proof}
 	Split the difference as
 	\[
 		T_\lambda - \widehat T_\lambda
@@ -412,15 +464,34 @@ For spectra with visible decay, the randomized term is governed by the tail beyo
 
 \section{Algorithmic Consequences}
 
-This formulation leads to a concrete algorithmic decomposition.
-\begin{enumerate}
-	\item Correct marginals by QDM.
-	\item Transform the corrected calibration and future samples to a latent rank-normal space.
-	\item Approximate the calibration covariance operators by randomized low-rank sketches.
-	\item Build a regularized covariance transport map from the low-rank surrogates.
-	\item Apply the map to the future latent data.
-	\item Restore the target marginals by rank rearrangement.
-\end{enumerate}
+This formulation leads to a concrete algorithmic decomposition, presented formally as \Cref{alg:mp_rand_cov_transport}.
+
+\begin{algorithm}[t]
+	\caption{Mixed-precision randomized covariance transport}
+	\label{alg:mp_rand_cov_transport}
+	\KwIn{Historical model data \(X_h\), future model data \(X_f\), historical reference data \(Y_h\), target rank \(r\), oversampling \(q\), regularization \(\lambda\), sketch precision \(u_\ell\)}
+	\KwOut{Corrected future sample \(\widetilde X_f^{\mathrm{corr}}\), diagnostics}
+	\BlankLine
+	Apply QDM-type marginal correction to obtain \(\widetilde X_h\), \(\widetilde X_f\)\;
+	Transform \(\widetilde X_h\), \(\widetilde X_f\), \(Y_h\) to latent rank-normal variables \(Z_X\), \(Z_f\), \(Z_Y\)\;
+	Form randomized covariance sketches in precision \(u_\ell\):
+	\[
+		Y_X = \tfrac{1}{n}Z_X^\top(Z_X\Omega_X),\qquad
+		Y_Y = \tfrac{1}{n}Z_Y^\top(Z_Y\Omega_Y)
+	\]\;
+	Compute orthonormal bases \(Q_X\), \(Q_Y\) (or shared basis \(Q\))\;
+	Form small covariance cores \(B_X = Q_X^\top C_X Q_X\), \(B_Y = Q_Y^\top C_Y Q_Y\)\;
+	Build regularized low-rank covariance surrogates \(\widehat C_{X,\lambda}\), \(\widehat C_{Y,\lambda}\)\;
+	Evaluate regularized transport map:
+	\[
+		\widehat T_\lambda = (\widehat C_{X,\lambda})^{-1/2}\,(\widehat C_{Y,\lambda})^{1/2}
+	\]\;
+	Apply \(Z_f^{\mathrm{corr}} = Z_f\,\widehat T_\lambda\)\;
+	Restore QDM marginals by rank rearrangement\;
+	\Return corrected future sample and diagnostics\;
+	\BlankLine
+	\textbf{Diagnostics:} covariance error \(\|C - \widehat C\|_2\); transport-map error \(\|T_\lambda - \widehat T_\lambda\|_2\); induced future-data perturbation \(\|Z_f T_\lambda - Z_f \widehat T_\lambda\|_F\); ratio \(\eta_{\mathrm{fp}}/\eta_{\mathrm{rand}}\); runtime\;
+\end{algorithm}
 
 This is the natural architecture for the software contribution as well. The implementation should separate a randomized covariance-approximation layer, a transport-map layer, and a climate-facing wrapper that handles marginal correction and rank restoration. Such a decomposition keeps the numerical core reusable while preserving a clear application entry point.
 
