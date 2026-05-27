@@ -110,7 +110,7 @@ The computational advantage is immediate: the numerically demanding work is conc
 \begin{proposition}[Randomized covariance approximation]
 	Let \(C \in \R^{p \times p}\) be symmetric positive semidefinite, and let \(Q\)
 	be produced by a randomized range finder with target rank \(r\) and oversampling
-	parameter \(q\). Then the compression error
+	parameter \(q\). Then the range-finder compression error
 	\[
 		\|(I-QQ^\top)C\|_2
 	\]
@@ -134,6 +134,26 @@ The computational advantage is immediate: the numerically demanding work is conc
 	positive semidefinite matrix. Since \(C\) is self-adjoint, its singular values are
 	precisely the eigenvalues \(\mu_j(C)\).
 \end{proof}
+
+It is important to distinguish the range-finder residual from the actual
+surrogate error. The range finder controls
+\(\|(I-QQ^\top)C\|_2\), which measures how well the column space of \(Q\)
+captures the action of \(C\). The low-rank surrogate actually used in the
+transport map is \(\widehat C = QBQ^\top\) with \(B = Q^\top C Q\), and its
+approximation error is
+\[
+	\|C - QBQ^\top\|_2
+	=
+	\|C - QQ^\top C QQ^\top\|_2.
+\]
+For a symmetric positive semidefinite matrix, these two quantities are related
+but not identical: the range residual upper-bounds the surrogate error because
+\(\|C - QQ^\top C QQ^\top\|_2 \le \|(I-QQ^\top)C\|_2 + \|CQQ^\top - QQ^\top C QQ^\top\|_2\),
+and the second term vanishes when \(C\) commutes with the projection \(QQ^\top\).
+In the experiments, the recorded covariance error is the surrogate error
+\(\|C - \widehat C\|_2\), while the theory provides bounds on the range-finder
+residual. The gap between them is typically small for SPD matrices with rapid
+spectral decay.
 
 Moreover, the regularized matrix functions of a low-rank surrogate can be applied
 without forming a full dense \(p \times p\) matrix. If \(Q \in \R^{p \times r}\) has
@@ -268,6 +288,18 @@ or more generally when the floating-point perturbation remains below the statist
 	so that the floating-point perturbation scales with the unit roundoff, the
 	sample size entering the accumulation, and the spectral scale of the
 	empirical covariance.
+
+	\medskip
+	\noindent\textit{Remark.} This bound models the combined product
+	\(Z^\top(Z\Omega)/n\) as a single inner-product accumulation of length
+	\(n\). In practice, the computation involves two stages --- first
+	\(W = Z\Omega\) (accumulation over \(p\) terms per entry), then
+	\(Y = Z^\top W/n\) (accumulation over \(n\) terms per entry) --- each with
+	its own rounding contribution. A fully detailed two-stage bound would
+	involve separate terms \(\gamma_p^{(u)}\) and \(\gamma_n^{(u)}\) for the
+	respective accumulations. The present bound is a simplified first-order
+	model that subsumes both stages into the dominant \(\gamma_n\) factor; the
+	exact two-stage constants are deferred to future work.
 \end{proposition}
 
 \begin{proof}
@@ -359,34 +391,43 @@ statements.
 	\]
 	Then
 	\[
-		\|A^{-1/2} - \widehat A^{-1/2}\|_2
+		\|B^{1/2} - \widehat B^{1/2}\|_2
 		\le
-		\frac{1}{2\alpha_0^{3/2}}\,\|\Delta A\|_2,
+		\frac{1}{2\beta_0^{1/2}}\,\|\Delta B\|_2,
 	\]
 	and
 	\[
-		\|B^{1/2} - \widehat B^{1/2}\|_2
+		\|A^{-1/2} - \widehat A^{-1/2}\|_2
 		\le
-		\frac{1}{2\beta_0^{1/2}}\,\|\Delta B\|_2.
+		\frac{1}{2\alpha_0^{3/2}}\,\|\Delta A\|_2.
 	\]
 \end{proposition}
 
 \begin{proof}[Proof sketch]
-	These inequalities are standard perturbation bounds for matrix functions on the
-	positive definite cone. One route is to write the Fr\'echet derivative of the
-	square-root map through a Sylvester equation and then apply a mean-value bound
-	for matrix functions; see \cite[Chs.~3 and 6]{higham2008functions}. The inverse-square-root estimate then follows from the identity
+	These bounds follow from the Fr\'echet-derivative structure of matrix
+	square-root and inverse-square-root functions on the positive definite cone.
+	For the square root, the Fr\'echet derivative \(L_f(A, E)\) of the map
+	\(f(A) = A^{1/2}\) satisfies the Sylvester equation
+	\(A^{1/2} L_f + L_f A^{1/2} = E\); bounding \(\|L_f\|_2\) via the
+	spectral norm of the Sylvester operator yields the first inequality with the
+	constant \((2\beta_0^{1/2})^{-1}\). The inverse-square-root bound then
+	follows from the identity
 	\[
 		A^{-1/2} - \widehat A^{-1/2}
 		=
 		A^{-1/2}(\widehat A^{1/2} - A^{1/2})\widehat A^{-1/2},
 	\]
-	combined with the square-root perturbation bound. The important qualitative
-	point is the scaling: the inverse square root is more sensitive near small
-	eigenvalues, with amplification proportional to \(\alpha_0^{-3/2}\).
+	combined with the square-root perturbation bound and the norm estimates
+	\(\|A^{-1/2}\|_2 \le \alpha_0^{-1/2}\),
+	\(\|\widehat A^{-1/2}\|_2 \le \alpha_0^{-1/2}\).
+	For a rigorous treatment of matrix-function Fr\'echet derivatives and
+	perturbation bounds, see \cite[Chs.~3 and 6]{higham2008functions}. The
+	important qualitative point is the scaling: the inverse square root is more
+	sensitive near small eigenvalues, with amplification proportional to
+	\(\alpha_0^{-3/2}\).
 \end{proof}
 
-\begin{theorem}[Perturbation of covariance transport]
+\begin{theorem}[Perturbation of covariance transport --- first-order schematic bound]
 	\label{thm:cov_transport_perturbation}
 	Assume that the hypotheses of the previous proposition hold. Then
 	\[
@@ -419,11 +460,16 @@ statements.
 		\le
 		K_\lambda\,(\eta_A + \eta_B).
 	\]
+	This is a first-order schematic bound used to guide experimental design.
 	When \(\|\Delta A\|_2\) and \(\|\Delta B\|_2\) are small relative to the
-	regularized spectral gaps, this behaves like a constant depending on
-	\(\lambda_{\min}(C_X+\lambda I)\) and \(\lambda_{\min}(C_Y+\lambda I)\).
-	In particular, the inverse-square-root term deteriorates at the rate
-	\(\lambda_{\min}(C_X+\lambda I)^{-3/2}\).
+	regularized spectral gaps, the amplification factor is essentially a constant
+	depending on \(\lambda_{\min}(C_X+\lambda I)\) and
+	\(\lambda_{\min}(C_Y+\lambda I)\). In particular, the inverse-square-root
+	term deteriorates at the rate
+	\(\lambda_{\min}(C_X+\lambda I)^{-3/2}\). A fully rigorous bound with
+	sharper constants would require tracking higher-order terms and exact
+	Sylvester-operator norms; the present statement suffices to explain the
+	qualitative regime structure observed in the experiments.
 \end{theorem}
 
 \begin{proof}
@@ -474,18 +520,16 @@ This formulation leads to a concrete algorithmic decomposition, presented formal
 	\BlankLine
 	Apply QDM-type marginal correction to obtain \(\widetilde X_h\), \(\widetilde X_f\)\;
 	Transform \(\widetilde X_h\), \(\widetilde X_f\), \(Y_h\) to latent rank-normal variables \(Z_X\), \(Z_f\), \(Z_Y\)\;
-	Form randomized covariance sketches in precision \(u_\ell\):
-	\[
-		Y_X = \tfrac{1}{n}Z_X^\top(Z_X\Omega_X),\qquad
-		Y_Y = \tfrac{1}{n}Z_Y^\top(Z_Y\Omega_Y)
-	\]\;
-	Compute orthonormal bases \(Q_X\), \(Q_Y\) (or shared basis \(Q\))\;
-	Form small covariance cores \(B_X = Q_X^\top C_X Q_X\), \(B_Y = Q_Y^\top C_Y Q_Y\)\;
+	\texttt{// Low-precision block:}\;
+	Form randomized covariance sketches in precision \(u_\ell\) (simulated or hardware-native):
+	\(Y_X = \tfrac{1}{n}Z_X^\top(Z_X\Omega_X)\), \quad
+	\(Y_Y = \tfrac{1}{n}Z_Y^\top(Z_Y\Omega_Y)\)\;
+	\texttt{// High-precision block:}\;
+	Compute orthonormal bases \(Q_X\), \(Q_Y\) (or shared basis \(Q\)) via QR in double precision\;
+	Form small covariance cores \(B_X = Q_X^\top C_X Q_X\), \(B_Y = Q_Y^\top C_Y Q_Y\) in double precision\;
 	Build regularized low-rank covariance surrogates \(\widehat C_{X,\lambda}\), \(\widehat C_{Y,\lambda}\)\;
-	Evaluate regularized transport map:
-	\[
-		\widehat T_\lambda = (\widehat C_{X,\lambda})^{-1/2}\,(\widehat C_{Y,\lambda})^{1/2}
-	\]\;
+	Evaluate regularized transport map in double precision:
+	\(\widehat T_\lambda = (\widehat C_{X,\lambda})^{-1/2}\,(\widehat C_{Y,\lambda})^{1/2}\)\;
 	Apply \(Z_f^{\mathrm{corr}} = Z_f\,\widehat T_\lambda\)\;
 	Restore QDM marginals by rank rearrangement\;
 	\Return corrected future sample and diagnostics\;
@@ -495,7 +539,7 @@ This formulation leads to a concrete algorithmic decomposition, presented formal
 
 This is the natural architecture for the software contribution as well. The implementation should separate a randomized covariance-approximation layer, a transport-map layer, and a climate-facing wrapper that handles marginal correction and rank restoration. Such a decomposition keeps the numerical core reusable while preserving a clear application entry point.
 
-The local \texttt{randMBC} prototype now realizes this decomposition explicitly. It exposes a deterministic marginal-correction and rank-restoration wrapper around a randomized covariance-transport core, together with a synthetic benchmark that compares the full regularized transport baseline, selected reference methods from the vendored \texttt{MBC} package, and the current randomized low-rank implementation. The first controlled runs are informative even though they are not yet favorable to the randomized method: on the present synthetic benchmark, the deterministic full transport and the MBC references remain markedly more accurate than the current low-rank randomized surrogate. This should not be read as a failure of the covariance-transport viewpoint itself. Rather, it identifies more precisely where the open problem lies, namely in the approximation regime where low-rank compression becomes accurate enough that transport-map perturbations no longer dominate the downstream dependence correction.
+The local \texttt{randMBC} prototype used for the experiments follows this decomposition explicitly. It provides a deterministic marginal-correction and rank-restoration wrapper around a randomized covariance-transport core, together with a synthetic benchmark that compares the full regularized transport baseline, selected reference methods from the vendored \texttt{MBC} package, and the randomized low-rank implementation. The first controlled runs are informative even though they are not yet favorable to the randomized method: on the present synthetic benchmark, the deterministic full transport and the MBC references remain markedly more accurate than the low-rank randomized surrogate. This should not be read as a failure of the covariance-transport viewpoint itself. Rather, it identifies more precisely where the open problem lies, namely in the approximation regime where low-rank compression becomes accurate enough that transport-map perturbations no longer dominate the downstream dependence correction.
 
 The same decomposition also determines the experimental program. The decisive sweeps are not arbitrary. They should vary the approximation rank, the regularization parameter, and the arithmetic precision while tracking covariance error, transport-map error, and the induced dependence error on the corrected future data. In particular, one should expect a regime where single precision is essentially indistinguishable from double because randomized truncation already dominates, and another regime where further rank increase reveals floating-point error because the approximation error has become too small to hide it.
 

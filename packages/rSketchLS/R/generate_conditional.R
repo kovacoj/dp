@@ -1,3 +1,23 @@
+#' Generate a matrix with controlled singular values
+#'
+#' Constructs a random dense matrix with orthonormal singular vectors and a
+#' prescribed condition-number pattern.
+#'
+#' @param n Integer number of rows.
+#' @param d Integer number of columns.
+#' @param kappa Numeric target condition number.
+#' @param mode Singular-value pattern. One of `"logspace"`, `"twocluster"`,
+#'   `"linspace"`, or `"random"`.
+#'
+#' @return A numeric `n` by `d` matrix with approximate condition number
+#'   `kappa`.
+#'
+#' @examples
+#' set.seed(1)
+#' A <- generate_conditional(20, 5, kappa = 100)
+#' kappa(A)
+#'
+#' @export
 generate_conditional <- function(
     n,
     d,
@@ -13,7 +33,7 @@ generate_conditional <- function(
         twocluster = c(rep(1, r - 1L), kappa),
         linspace = if (r == 1L) kappa else seq(1, kappa, length.out = r),
         random = {
-            s <- sort(10^(log10(kappa) * runif(r)), decreasing = FALSE)
+            s <- sort(10^(log10(kappa) * stats::runif(r)), decreasing = FALSE)
             s[1L] <- 1
             s[r] <- kappa
             s

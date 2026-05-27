@@ -52,10 +52,10 @@ On the least-squares side, the experiments confirm the expected picture.
 Residual preservation improves steadily with the sketch dimension, and the
 solution error is governed by the conditioning of the sketched matrix rather
 than by the residual quality alone. For Gaussian sketches with \(n=1024\) and
-\(d=20\), the residual ratio falls below \(1.1\) only when \(s \ge 200\), while
-the solution error is already at machine precision for all tested sketch sizes.
-This confirms that residual and solution diagnostics probe different aspects of
-the perturbation structure.
+\(d=20\) and moderate additive noise, the residual ratio falls below \(1.1\)
+only when \(s \ge 200\), while the solution error decreases more rapidly with
+the sketch dimension. This confirms that residual and solution diagnostics
+probe different aspects of the perturbation structure.
 
 On the covariance-transport side, the most important finding is the dominant
 role of regularization. For an exponential spectrum with \(p=30\) and
@@ -77,26 +77,25 @@ regularization-amplified errors.
 
 \section*{Limitations}
 
-The current randomized covariance-transport implementation is not competitive
+The randomized covariance-transport implementation is not yet competitive
 with the deterministic full baseline on the synthetic benchmarks tested. The
-deterministic full covariance transport and the MBC reference methods remain
-markedly more accurate in correlation and future-sample error than the low-rank
-randomized variants. This is not a failure of the covariance-transport
-viewpoint itself. Rather, it identifies the approximation regime as the current
-bottleneck: the rank and regularization choices that make the low-rank surrogate
-accurate enough for transport-map perturbations to be small have not yet been
-reached.
+deterministic full covariance transport remains more accurate in correlation
+and future-sample error than the low-rank randomized variants. This is not a
+failure of the covariance-transport viewpoint itself. Rather, it identifies the
+approximation regime as the current bottleneck: the rank and regularization
+choices that make the low-rank surrogate accurate enough for transport-map
+perturbations to be small have not yet been reached.
 
 A second limitation is that the precision-visible regime has not been observed
-experimentally. The current experiments operate in regimes where truncation
+experimentally. The experiments operate in regimes where truncation
 error and regularization amplification both dominate the arithmetic floor, so
 the balancing-inexactness prediction cannot be fully validated numerically.
 
-The climate-model application chapter remains more of a design and context
-chapter than a fully realised experimental study. The transition from synthetic
-covariance operators to real climate-data pipelines would require data access,
-preprocessing, and domain-specific diagnostics that are outside the scope of
-the present numerical work.
+The climate-model application chapter provides a workflow and validation
+design; full real-data benchmarking remains future work. The transition from
+synthetic covariance operators to real climate-data pipelines would require
+data access, preprocessing, and domain-specific diagnostics that are outside
+the scope of the present numerical work.
 
 \section*{Future Work}
 

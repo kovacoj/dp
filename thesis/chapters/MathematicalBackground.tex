@@ -361,15 +361,20 @@ when the problem is inconsistent: the residual \(r_\star\) is not zero, and the
 perturbation of the residual direction is amplified by \(\kappa_2(A)^2\).
 
 This distinction between the consistent and inconsistent cases is central to
-the thesis. In sketch-and-solve methods, the sketch replaces \(A\) by a
-compressed operator \(SA\). The perturbation \(\Delta A = SA - A\) (in the
-appropriate metric) is governed by the embedding distortion \(\varepsilon\), but
-its effect on the solution is filtered through \(\kappa_2(A)\) and the residual
-size. Therefore, a small embedding distortion does not guarantee a small
-solution error unless the original problem is well-conditioned or nearly
-consistent. The experiments track both residual ratio and relative solution
-error precisely because these two quantities probe different aspects of the
-perturbation structure.
+the thesis. In sketch-and-solve methods, the sketch replaces the original
+operator by a compressed one. Sketching is not an additive perturbation of \(A\)
+in the usual matrix sense, since \(SA\) lives in a different row space and
+\(SA - A\) is not a valid perturbation of compatible dimensions. Its effect is
+instead measured by how much the sketch distorts the geometry of the relevant
+subspace, equivalently by the Gram distortion \(U^\top S^\top S U - I\), where
+\(U\) is an orthonormal basis for the column space of \(A\) (or the augmented
+space of \([A\; r_\star]\)). This distortion is governed by the embedding
+parameter \(\varepsilon\), and its effect on the solution is filtered through
+\(\kappa_2(A)\) and the residual size. Therefore, a small embedding distortion
+does not guarantee a small solution error unless the original problem is
+well-conditioned or nearly consistent. The experiments track both residual
+ratio and relative solution error precisely because these two quantities probe
+different aspects of the perturbation structure.
 
 In the covariance-transport chapters, the same pattern reappears in a different
 algebraic form. The perturbation of the transport map \(T_\lambda = A^{-1/2}
