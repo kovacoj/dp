@@ -6,11 +6,40 @@ Randomized Numerical Linear Algebra in Mixed Precision, with an Application to C
 
 ## Thesis Questions
 
-1. Which randomized sketching methods are most suitable for overdetermined least-squares problems?
-2. How do Gaussian and structured sketches compare in accuracy, conditioning, and cost?
-3. Which parts of the sketch-and-solve pipeline tolerate lower precision, and which do not?
-4. Does mixed precision give a real advantage in runtime, memory, or scalability for the targeted problem sizes?
-5. How do these methods transfer to a climate-model bias-correction workflow?
+1. How do randomized low-rank covariance approximations perturb a regularized covariance-transport map?
+2. How do finite-precision perturbations interact with randomized approximation error in this transport map?
+3. Which regimes satisfy the balancing principle that floating-point error is hidden by randomized or statistical tolerance?
+4. How do least-squares sketching and sketch-and-precondition solvers serve as model problems for the covariance-transport analysis?
+5. How does the method compare with relevant climate post-processing R packages in an application workflow?
+
+## Current Framing (2026-05-27)
+
+The thesis is mathematical first. The central object is the regularized covariance transport map
+
+```text
+T_lambda = (C_X + lambda I)^(-1/2) (C_Y + lambda I)^(1/2),
+```
+
+where `C_X = Z_X^T Z_X / n` and `C_Y = Z_Y^T Z_Y / n` are empirical covariance
+operators in a latent dependence space.
+
+The computed randomized mixed-precision approximation is modeled as
+
+```text
+C_hat = C + E_rand + E_fp
+```
+
+and the main theorem chain should explain how this perturbation affects
+
+```text
+||T_lambda - T_hat_lambda||_2
+||Z_f T_lambda - Z_f T_hat_lambda||_F.
+```
+
+The R packages, backend contracts, and benchmarks support this mathematical
+story. They are validation layers, not replacements for the theory. `MBC` is the
+first reference package for comparison, but the broader benchmark ecosystem is
+tracked in `docs/r-package-ecosystem-survey.md`.
 
 ## Current Status (2026-05-18)
 

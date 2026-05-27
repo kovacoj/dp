@@ -2,7 +2,7 @@ name: Thesis CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
     paths:
       - "thesis/**"
       - "paper/**"
@@ -10,7 +10,7 @@ on:
       - "pages/**"
       - ".github/workflows/thesis.yml"
   pull_request:
-    branches: [ main ]
+    branches: [main]
     paths:
       - "thesis/**"
       - "paper/**"
@@ -44,6 +44,52 @@ jobs:
           path: |
             thesis/thesis.pdf
 
+  build-chapters:
+    name: "Build chapter: ${{ matrix.chapter }}"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        chapter:
+          - Introduction
+          - Notation
+          - MathematicalBackground
+          - MixedPrecision
+          - RandomizedLeastSquares
+          - RandomizedCovarianceTransport
+          - NumericalExperiments
+          - AtmosphericPhenomena
+          - ClimateApplication
+          - Conclusion
+    steps:
+      - name: Set up Git repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Inject chapter name
+        run: |
+          sed -i "s/CHAPTER_PLACEHOLDER/${{ matrix.chapter }}/" thesis/chapter.tex
+
+      - name: Compile chapter PDF
+        uses: xu-cheng/latex-action@v3
+        with:
+          working_directory: thesis
+          root_file: chapter.tex
+          texlive_version: latest
+          extra_system_packages: coreutils icu inkscape
+
+      - name: Rename chapter PDF
+        run: |
+          mkdir -p chapters-artifact
+          cp thesis/chapter.pdf "chapters-artifact/chapter-${{ matrix.chapter }}.pdf"
+
+      - name: Upload chapter artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: chapter-${{ matrix.chapter }}-pdf
+          path: chapters-artifact/chapter-${{ matrix.chapter }}.pdf
+
   build-paper:
     name: Build randmbc note and upload artifact
     runs-on: ubuntu-latest
@@ -71,7 +117,7 @@ jobs:
     name: Deploy PDFs and landing page to gh-pages
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
-    needs: [build-thesis, build-paper]
+    needs: [build-thesis, build-chapters, build-paper]
     permissions:
       contents: write
     steps:
@@ -80,6 +126,13 @@ jobs:
         with:
           name: thesis-pdf
           path: thesis-artifact
+
+      - name: Download chapter artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: chapter-*-pdf
+          path: chapters-merged
+          merge-multiple: true
 
       - name: Download paper artifact
         uses: actions/download-artifact@v4
@@ -100,8 +153,9 @@ jobs:
 
       - name: Update gh-pages branch
         run: |
-          mkdir -p pages-branch/papers
+          mkdir -p pages-branch/chapters pages-branch/papers
           cp thesis-artifact/thesis.pdf pages-branch/thesis.pdf
+          cp chapters-merged/*.pdf pages-branch/chapters/
           cp paper-artifact/paper.pdf pages-branch/papers/randmbc-note.pdf
           cp repo/pages/index.html pages-branch/index.html
           cp repo/pages/.nojekyll pages-branch/.nojekyll
@@ -109,10 +163,10 @@ jobs:
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git rm -f index.md _config.yml || true
-          git add -A thesis.pdf papers/randmbc-note.pdf index.html .nojekyll
+          git add -A thesis.pdf chapters/ papers/randmbc-note.pdf index.html .nojekyll
           if git diff --cached --quiet; then
             echo "No changes to deploy"
           else
-            git commit -m "deploy: update thesis and paper PDFs"
+            git commit -m "deploy: update thesis, chapters, and paper PDFs"
             git push origin gh-pages
           fi
