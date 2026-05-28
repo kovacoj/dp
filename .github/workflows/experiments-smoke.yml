@@ -1,0 +1,49 @@
+name: Experiment Smoke
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "experiments/**"
+      - "packages/**"
+      - ".github/workflows/experiments-smoke.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "experiments/**"
+      - "packages/**"
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: release
+      - name: Install packages
+        run: |
+          R CMD INSTALL packages/rSketchLS
+          R CMD INSTALL packages/randMBC
+      - name: Run experiment 01 (tiny)
+        run: |
+          Rscript -e '
+            MASTER_SEED <- 20260527L
+            n <- 40; d <- 4; s_vals <- c(8, 12)
+            trials <- 2; noise_level <- 0.1; method <- "gaussian"; seed <- 1
+            library(rSketchLS)
+            out <- sketch_lstsq_experiment(
+              n = n, d = d, s_values = s_vals, trials = trials,
+              noise_level = noise_level, method = method, seed = seed
+            )
+            cat("OK: nrow =", nrow(out$history), "\n")
+          '
+      - name: Run experiment 04 (tiny)
+        run: |
+          Rscript -e '
+            library(randMBC)
+            op <- generate_cov_operator(20, rank = 10, spectrum = "exponential", cond = 100, seed = 1)
+            df <- run_cov_transport_sweep(op, ranks = c(5, 10), lambdas = 1e-6,
+              n_trials = 2, base_seed = 1)
+            cat("OK: nrow =", nrow(df), "\n")
+          '

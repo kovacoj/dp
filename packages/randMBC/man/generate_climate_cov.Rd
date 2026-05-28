@@ -9,17 +9,32 @@ generate_climate_cov(
   n_loc = 10,
   rank_signal = 5,
   noise_level = 0.001,
+  spatial_rho = 0.85,
+  temporal_rho = 0.65,
+  cross_rho = 0.35,
+  seasonal_strength = 1,
+  vars = c("pr", "tas", "psl"),
   seed = NULL
 )
 }
 \arguments{
-\item{n_var}{Number of physical variables.}
+\item{n_var}{Number of physical variables (e.g. 3 for `pr`, `tas`, `psl`).}
 
 \item{n_loc}{Number of spatial locations per variable.}
 
 \item{rank_signal}{Rank of the dominant shared component.}
 
 \item{noise_level}{Relative magnitude of the noise floor eigenvalues.}
+
+\item{spatial_rho}{Spatial autocorrelation parameter (0, 1).}
+
+\item{temporal_rho}{Temporal AR(1) dependence parameter (0, 1).}
+
+\item{cross_rho}{Inter-variable correlation parameter (0, 1).}
+
+\item{seasonal_strength}{Scaling for seasonal mean structure.}
+
+\item{vars}{Character vector of variable names. Used only for metadata.}
 
 \item{seed}{Optional integer seed.}
 }
@@ -34,6 +49,6 @@ modes), a block-diagonal component (local variable interactions), and a
 noise floor.
 }
 \examples{
-op <- generate_climate_cov(n_var = 3, n_loc = 10, rank_signal = 5)
+op <- generate_climate_cov(n_var = 3, n_loc = 10, rank_signal = 5, seed = 1)
 op$rank
 }

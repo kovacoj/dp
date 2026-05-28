@@ -299,7 +299,8 @@ or more generally when the floating-point perturbation remains below the statist
 	involve separate terms \(\gamma_p^{(u)}\) and \(\gamma_n^{(u)}\) for the
 	respective accumulations. The present bound is a simplified first-order
 	model that subsumes both stages into the dominant \(\gamma_n\) factor; the
-	exact two-stage constants are deferred to future work.
+	implementation provides an optional two-stage variant in
+	\texttt{randMBC::sketch\_forward\_bound} with \texttt{two\_stage = TRUE}.
 \end{proposition}
 
 \begin{proof}
@@ -417,7 +418,10 @@ statements.
 		=
 		A^{-1/2}(\widehat A^{1/2} - A^{1/2})\widehat A^{-1/2},
 	\]
-	combined with the square-root perturbation bound and the norm estimates
+	This algebraic identity is useful but does not by itself constitute a
+	perturbation bound; the rigorous bound follows from matrix-function
+	perturbation theory \cite[Chs.~3 and 6]{higham2008functions}.
+	Combined with the square-root perturbation bound and the norm estimates
 	\(\|A^{-1/2}\|_2 \le \alpha_0^{-1/2}\),
 	\(\|\widehat A^{-1/2}\|_2 \le \alpha_0^{-1/2}\).
 	For a rigorous treatment of matrix-function Fr\'echet derivatives and
@@ -461,6 +465,10 @@ statements.
 		K_\lambda\,(\eta_A + \eta_B).
 	\]
 	This is a first-order schematic bound used to guide experimental design.
+	The constant in this bound is a schematic first-order amplification factor;
+	it has not been tracked to a fully rigorous constant under the stated
+	hypotheses. See the implementation's two-stage forward model for the
+	numerically active version.
 	When \(\|\Delta A\|_2\) and \(\|\Delta B\|_2\) are small relative to the
 	regularized spectral gaps, the amplification factor is essentially a constant
 	depending on \(\lambda_{\min}(C_X+\lambda I)\) and

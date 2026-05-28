@@ -7,8 +7,9 @@
 generate_cov_operator(
   p,
   rank = p,
-  spectrum = c("exponential", "linear", "flat", "gap"),
+  spectrum = c("exponential", "linear", "flat", "gap", "custom"),
   cond = NULL,
+  custom_eigvals = NULL,
   seed = NULL
 )
 }
@@ -29,10 +30,14 @@ full-rank operators.}
     low-rank operator).}
   \item{`"gap"`}{One large eigenvalue, a gap, then a cluster of small
     eigenvalues.  Useful for testing rank-selection behaviour.}
+  \item{`"custom"`}{User-supplied eigenvalues via `custom_eigvals`.}
 }}
 
 \item{cond}{Target condition number of the nonzero part.  Ignored when
 `spectrum = "flat"`.}
+
+\item{custom_eigvals}{Numeric vector of eigenvalues for `spectrum = "custom"`.
+Ignored otherwise.}
 
 \item{seed}{Optional integer seed for the random rotation.}
 }

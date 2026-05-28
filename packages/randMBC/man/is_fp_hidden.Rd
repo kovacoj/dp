@@ -4,7 +4,7 @@
 \alias{is_fp_hidden}
 \title{Check whether floating-point error is dominated by randomized truncation}
 \usage{
-is_fp_hidden(pm, rand_err, norm_Z, norm_Omega, n)
+is_fp_hidden(pm, rand_err, norm_Z, norm_Omega, n, p)
 }
 \arguments{
 \item{pm}{A \code{randMBC_precision} object.}
@@ -17,6 +17,8 @@ is_fp_hidden(pm, rand_err, norm_Z, norm_Omega, n)
 \item{norm_Omega}{Spectral norm of \code{Omega}.}
 
 \item{n}{Number of rows in \code{Z}.}
+
+\item{p}{Number of columns in \code{Z}.}
 }
 \value{
 A logical scalar.
@@ -28,5 +30,5 @@ that reduced precision is likely safe at the current rank and spectrum.
 }
 \examples{
 pm <- precision_model("single", "double")
-is_fp_hidden(pm, rand_err = 0.5, norm_Z = 10, norm_Omega = sqrt(2), n = 100)
+is_fp_hidden(pm, rand_err = 0.5, norm_Z = 10, norm_Omega = sqrt(2), n = 100, p = 20)
 }

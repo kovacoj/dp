@@ -9,7 +9,9 @@ sketch_forward_bound(
   norm_Z,
   norm_Omega,
   n,
-  stage = c("sketch", "orth", "core")
+  p = ncol,
+  stage = c("sketch", "orth", "core"),
+  two_stage = TRUE
 )
 }
 \arguments{
@@ -19,9 +21,13 @@ sketch_forward_bound(
 
 \item{norm_Omega}{Spectral norm of the sketching matrix \code{Omega}.}
 
-\item{n}{Number of rows in \code{Z} (accumulation length).}
+\item{n}{Number of rows in \code{Z} (accumulation length for stage 2).}
+
+\item{p}{Number of columns in \code{Z} (accumulation length for stage 1).}
 
 \item{stage}{The computational stage whose precision governs the bound.}
+
+\item{two_stage}{Logical. If `TRUE` (default), return the two-stage bound.}
 }
 \value{
 A scalar upper bound on the forward error.
@@ -32,7 +38,17 @@ product satisfies an error bound proportional to the unit roundoff,
 the squared spectral norm of the data, the norm of the sketching
 operator, and the reciprocal of the sample size.
 }
+\details{
+When `two_stage = TRUE` (default), the bound accounts for both stages
+of the covariance-action product:
+\eqn{W = Z\Omega} (stage 1, length `p`) and
+\eqn{Y = Z^\top W / n} (stage 2, length `n`).
+The combined bound is the sum of the individual stage bounds.
+
+When `two_stage = FALSE`, only the simpler one-stage bound is returned
+(heuristic mode for plot annotations).
+}
 \examples{
 pm <- precision_model("single", "double")
-sketch_forward_bound(pm, norm_Z = 10, norm_Omega = sqrt(2), n = 100)
+sketch_forward_bound(pm, norm_Z = 10, norm_Omega = sqrt(2), n = 100, p = 20)
 }

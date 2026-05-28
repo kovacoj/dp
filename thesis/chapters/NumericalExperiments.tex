@@ -122,6 +122,11 @@ not automatically guarantee an equally small perturbation in the minimizer. The
 condition number of \(SA\) is recorded because it is one of the main mechanisms
 that links these two behaviors.
 
+When the system is exactly consistent, however, the reference residual may be
+zero or extremely small, in which case the residual ratio ceases to be a stable or
+meaningful diagnostic. For that reason, the reported residual-ratio experiments in
+this chapter use additive noise \(b = Ax_\star + e\) with nonzero noise level.
+
 In addition, the implementations average the independent trials at each sketch
 size. If \(\hat x^{(1)},\dots,\hat x^{(m)}\) are the trial solutions, the code forms
 their mean and reports the mean absolute error of this averaged estimator relative
@@ -359,6 +364,7 @@ The second set of experiments tests the theory from \Cref{ch:randcovtransport} d
 	\centering
 	\caption{Covariance transport sweep: exponential spectrum, \(p=30\), double precision, Gaussian sketch, \(10\) trials. All errors are absolute: \(\|C - \widehat C\|_2\) and \(\|T_\lambda - \widehat T_\lambda\|_2\). Means over trials; per-trial variability not yet available in post-processed form.}
 	\label{tab:ct_double}
+	% TODO: add mean \pm sd and median [IQR] columns to this table.
 	\begin{tabular}{rccc}
 		\toprule
 		Rank \(r\) & \(\lambda\) & Mean \(\|C - \widehat C\|_2\) & Mean \(\|T_\lambda - \widehat T_\lambda\|_2\) \\
@@ -396,6 +402,7 @@ This finding is simultaneously reassuring and limiting. It confirms that single 
 	\centering
 	\caption{Precision comparison for selected parameter combinations. Mean absolute transport error \(\|T_\lambda - \widehat T_\lambda\|_2\) over \(10\) trials. Per-trial variability not yet available.}
 	\label{tab:ct_precision}
+	% TODO: add mean \pm sd and median [IQR] columns to this table.
 	\begin{tabular}{rccc}
 		\toprule
 		Rank \(r\) & \(\lambda\) & Double precision & Single precision \\

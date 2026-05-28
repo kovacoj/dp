@@ -122,28 +122,55 @@ round_to_stage.randMBC_precision <- function(pm, x, stage = c("sketch", "orth", 
 #' the squared spectral norm of the data, the norm of the sketching
 #' operator, and the reciprocal of the sample size.
 #'
+#' When `two_stage = TRUE` (default), the bound accounts for both stages
+#' of the covariance-action product:
+#' \eqn{W = Z\Omega} (stage 1, length `p`) and
+#' \eqn{Y = Z^\top W / n} (stage 2, length `n`).
+#' The combined bound is the sum of the individual stage bounds.
+#'
+#' When `two_stage = FALSE`, only the simpler one-stage bound is returned
+#' (heuristic mode for plot annotations).
+#'
 #' @param pm A \code{randMBC_precision} object.
 #' @param norm_Z Spectral norm of the data matrix \code{Z}.
 #' @param norm_Omega Spectral norm of the sketching matrix \code{Omega}.
-#' @param n Number of rows in \code{Z} (accumulation length).
+#' @param n Number of rows in \code{Z} (accumulation length for stage 2).
+#' @param p Number of columns in \code{Z} (accumulation length for stage 1).
 #' @param stage The computational stage whose precision governs the bound.
+#' @param two_stage Logical. If `TRUE` (default), return the two-stage bound.
 #'
 #' @return A scalar upper bound on the forward error.
 #' @examples
 #' pm <- precision_model("single", "double")
-#' sketch_forward_bound(pm, norm_Z = 10, norm_Omega = sqrt(2), n = 100)
+#' sketch_forward_bound(pm, norm_Z = 10, norm_Omega = sqrt(2), n = 100, p = 20)
 #' @export
 sketch_forward_bound <- function(
     pm,
     norm_Z,
     norm_Omega,
     n,
-    stage = c("sketch", "orth", "core")
+    p = ncol,
+    stage = c("sketch", "orth", "core"),
+    two_stage = TRUE
 ) {
     stage <- match.arg(stage)
     u <- unit_roundoff(pm, stage)
-    gamma_n <- (n * u) / (1 - n * u)
-    gamma_n * (norm_Z^2 / n) * norm_Omega
+
+    stage1_bound <- function() {
+        gamma_p <- (p * u) / (1 - p * u)
+        gamma_p * norm_Z * norm_Omega
+    }
+
+    stage2_bound <- function() {
+        gamma_n <- (n * u) / (1 - n * u)
+        gamma_n * (norm_Z^2 / n) * norm_Omega
+    }
+
+    if (two_stage) {
+        stage1_bound() + stage2_bound()
+    } else {
+        stage2_bound()
+    }
 }
 
 #' Check whether floating-point error is dominated by randomized truncation
@@ -158,13 +185,14 @@ sketch_forward_bound <- function(
 #' @param norm_Z Spectral norm of \code{Z}.
 #' @param norm_Omega Spectral norm of \code{Omega}.
 #' @param n Number of rows in \code{Z}.
+#' @param p Number of columns in \code{Z}.
 #'
 #' @return A logical scalar.
 #' @examples
 #' pm <- precision_model("single", "double")
-#' is_fp_hidden(pm, rand_err = 0.5, norm_Z = 10, norm_Omega = sqrt(2), n = 100)
+#' is_fp_hidden(pm, rand_err = 0.5, norm_Z = 10, norm_Omega = sqrt(2), n = 100, p = 20)
 #' @export
-is_fp_hidden <- function(pm, rand_err, norm_Z, norm_Omega, n) {
-    fp_bound <- sketch_forward_bound(pm, norm_Z, norm_Omega, n, stage = "sketch")
+is_fp_hidden <- function(pm, rand_err, norm_Z, norm_Omega, n, p) {
+    fp_bound <- sketch_forward_bound(pm, norm_Z, norm_Omega, n, p, stage = "sketch")
     fp_bound <= rand_err
 }

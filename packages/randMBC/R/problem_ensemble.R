@@ -19,7 +19,10 @@
 #'       low-rank operator).}
 #'     \item{`"gap"`}{One large eigenvalue, a gap, then a cluster of small
 #'       eigenvalues.  Useful for testing rank-selection behaviour.}
+#'     \item{`"custom"`}{User-supplied eigenvalues via `custom_eigvals`.}
 #'   }
+#' @param custom_eigvals Numeric vector of eigenvalues for `spectrum = "custom"`.
+#'   Ignored otherwise.
 #' @param cond Target condition number of the nonzero part.  Ignored when
 #'   `spectrum = "flat"`.
 #' @param seed Optional integer seed for the random rotation.
@@ -40,8 +43,9 @@
 generate_cov_operator <- function(
     p,
     rank = p,
-    spectrum = c("exponential", "linear", "flat", "gap"),
+    spectrum = c("exponential", "linear", "flat", "gap", "custom"),
     cond = NULL,
+    custom_eigvals = NULL,
     seed = NULL
 ) {
     spectrum <- match.arg(spectrum)
@@ -57,7 +61,7 @@ generate_cov_operator <- function(
         set.seed(seed)
     }
 
-    eigvals <- .build_spectrum(rank, spectrum, cond)
+    eigvals <- .build_spectrum(rank, spectrum, cond, custom_eigvals)
     full_eigvals <- c(eigvals, rep(0, p - rank))
     Q <- .random_rotation(p)
 
@@ -69,7 +73,8 @@ generate_cov_operator <- function(
         eigvals = full_eigvals,
         rank = rank,
         spectrum = spectrum,
-        cond = if (spectrum == "flat") 1 else cond
+        cond = if (spectrum == "flat") 1 else if (spectrum == "custom") full_eigvals[1] / max(full_eigvals[rank], .Machine$double.eps) else cond,
+        seed = seed
     )
 }
 
@@ -81,15 +86,20 @@ generate_cov_operator <- function(
 #' modes), a block-diagonal component (local variable interactions), and a
 #' noise floor.
 #'
-#' @param n_var Number of physical variables.
+#' @param n_var Number of physical variables (e.g. 3 for `pr`, `tas`, `psl`).
 #' @param n_loc Number of spatial locations per variable.
 #' @param rank_signal Rank of the dominant shared component.
 #' @param noise_level Relative magnitude of the noise floor eigenvalues.
+#' @param spatial_rho Spatial autocorrelation parameter (0, 1).
+#' @param temporal_rho Temporal AR(1) dependence parameter (0, 1).
+#' @param cross_rho Inter-variable correlation parameter (0, 1).
+#' @param seasonal_strength Scaling for seasonal mean structure.
+#' @param vars Character vector of variable names. Used only for metadata.
 #' @param seed Optional integer seed.
 #'
 #' @return Same structure as \code{\link{generate_cov_operator}}.
 #' @examples
-#' op <- generate_climate_cov(n_var = 3, n_loc = 10, rank_signal = 5)
+#' op <- generate_climate_cov(n_var = 3, n_loc = 10, rank_signal = 5, seed = 1)
 #' op$rank
 #' @export
 generate_climate_cov <- function(
@@ -97,6 +107,11 @@ generate_climate_cov <- function(
     n_loc = 10,
     rank_signal = 5,
     noise_level = 1e-3,
+    spatial_rho = 0.85,
+    temporal_rho = 0.65,
+    cross_rho = 0.35,
+    seasonal_strength = 1,
+    vars = c("pr", "tas", "psl"),
     seed = NULL
 ) {
     p <- n_var * n_loc
@@ -110,11 +125,20 @@ generate_climate_cov <- function(
     block_cov <- matrix(0, p, p)
     for (v in seq_len(n_var)) {
         idx <- ((v - 1L) * n_loc + 1L):(v * n_loc)
-        rho <- 0.8
-        block_cov[idx, idx] <- rho^abs(outer(seq_len(n_loc), seq_len(n_loc), "-"))
+        block_cov[idx, idx] <- spatial_rho^abs(outer(seq_len(n_loc), seq_len(n_loc), "-"))
     }
 
-    covariance <- signal_cov + block_cov + diag(noise_level, p)
+    cross_cov <- matrix(0, p, p)
+    for (v1 in seq_len(n_var)) {
+        for (v2 in seq_len(n_var)) {
+            if (v1 == v2) next
+            idx1 <- ((v1 - 1L) * n_loc + 1L):(v1 * n_loc)
+            idx2 <- ((v2 - 1L) * n_loc + 1L):(v2 * n_loc)
+            cross_cov[idx1, idx2] <- cross_rho * spatial_rho^abs(outer(seq_len(n_loc), seq_len(n_loc), "-"))
+        }
+    }
+
+    covariance <- signal_cov + block_cov + cross_cov + diag(noise_level, p)
     covariance <- (covariance + t(covariance)) / 2
 
     eigvals <- eigen(covariance, symmetric = TRUE, only.values = TRUE)$values
@@ -124,11 +148,18 @@ generate_climate_cov <- function(
         eigvals = eigvals,
         rank = p,
         spectrum = "climate-shaped",
-        cond = eigvals[1] / max(eigvals[p], .Machine$double.eps)
+        cond = eigvals[1] / max(eigvals[p], .Machine$double.eps),
+        n_var = n_var,
+        n_loc = n_loc,
+        vars = vars,
+        spatial_rho = spatial_rho,
+        temporal_rho = temporal_rho,
+        cross_rho = cross_rho,
+        seed = seed
     )
 }
 
-.build_spectrum <- function(rank, spectrum, cond) {
+.build_spectrum <- function(rank, spectrum, cond, custom_eigvals = NULL) {
     if (rank == 1L) {
         return(1)
     }
@@ -147,6 +178,11 @@ generate_climate_cov <- function(
         },
         gap = {
             c(1, rep(1 / cond, rank - 1))
+        },
+        custom = {
+            if (is.null(custom_eigvals)) stop("custom_eigvals required when spectrum = 'custom'")
+            if (length(custom_eigvals) != rank) stop("custom_eigvals must have length equal to rank")
+            sort(custom_eigvals, decreasing = TRUE)
         }
     )
 }
