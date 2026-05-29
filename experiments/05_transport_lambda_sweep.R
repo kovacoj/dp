@@ -14,11 +14,7 @@ cfg <- list(
 )
 
 make_results_dir <- function(script_name) {
-    args_all <- commandArgs(trailingOnly = FALSE)
-    file_arg <- args_all[grep("^--file=", args_all)]
-    script_path <- if (!is.null(sys.frame(1)$ofile)) sys.frame(1)$ofile else sub("^--file=", "", file_arg[[1L]])
-    script_dir <- dirname(normalizePath(script_path))
-    results_root <- file.path(script_dir, "results")
+    results_root <- file.path("/workspace", "results")
     dir.create(results_root, recursive = TRUE, showWarnings = FALSE)
     stamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
     out_dir <- file.path(results_root, paste0(tools::file_path_sans_ext(script_name), "_", stamp))
@@ -32,6 +28,7 @@ write_git_sha <- function(path) {
     writeLines(sha[[1L]], con = path)
 }
 
+out_dir <- make_results_dir("05_transport_lambda_sweep.R")
 writeLines(c(
     sprintf("master_seed: %d", MASTER_SEED),
     sprintf("p: %d", cfg$p),
@@ -40,7 +37,7 @@ writeLines(c(
     sprintf("spectrum: %s", cfg$spectrum),
     sprintf("cond: %.16g", cfg$cond),
     sprintf("n_trials: %d", cfg$n_trials)
-), con = file.path((out_dir <- make_results_dir("05_transport_lambda_sweep.R")), "config.yaml"))
+), con = file.path(out_dir, "config.yaml"))
 write_git_sha(file.path(out_dir, "git_sha.txt"))
 capture.output(utils::sessionInfo(), file = file.path(out_dir, "sessionInfo.txt"))
 

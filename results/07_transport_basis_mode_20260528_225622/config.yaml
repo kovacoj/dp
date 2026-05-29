@@ -1,0 +1,6 @@
+master_seed: 20260527
+p: 30
+rank_vals: [10, 20]
+lambdas: [1e-06, 1e-02]
+basis_modes: [shared, independent]
+n_trials: 20

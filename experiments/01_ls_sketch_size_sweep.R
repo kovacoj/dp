@@ -15,18 +15,13 @@ cfg <- list(
 )
 
 make_results_dir <- function(script_name) {
-    script_dir <- dirname(normalizePath(sys.frame(1)$ofile %||% commandArgs(trailingOnly = FALSE)[grep("^--file=", commandArgs(trailingOnly = FALSE))][1]))
-    results_root <- file.path(script_dir, "results")
+    results_root <- file.path("/workspace", "results")
     dir.create(results_root, recursive = TRUE, showWarnings = FALSE)
     stamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
-    out_dir <- file.path(results_root, paste0(tools::file_path_sans_ext(basename(script_name)), "_", stamp))
+    out_dir <- file.path(results_root, paste0(tools::file_path_sans_ext(script_name), "_", stamp))
     dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
     dir.create(file.path(out_dir, "figures"), recursive = TRUE, showWarnings = FALSE)
     out_dir
-}
-
-`%||%` <- function(x, y) {
-    if (is.null(x) || length(x) == 0L || is.na(x)) y else x
 }
 
 write_config <- function(path, cfg_list) {

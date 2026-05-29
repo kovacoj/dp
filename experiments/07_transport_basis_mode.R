@@ -13,11 +13,7 @@ cfg <- list(
 )
 
 make_results_dir <- function(script_name) {
-    args_all <- commandArgs(trailingOnly = FALSE)
-    file_arg <- args_all[grep("^--file=", args_all)]
-    script_path <- if (!is.null(sys.frame(1)$ofile)) sys.frame(1)$ofile else sub("^--file=", "", file_arg[[1L]])
-    script_dir <- dirname(normalizePath(script_path))
-    results_root <- file.path(script_dir, "results")
+    results_root <- file.path("/workspace", "results")
     dir.create(results_root, recursive = TRUE, showWarnings = FALSE)
     stamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
     out_dir <- file.path(results_root, paste0(tools::file_path_sans_ext(script_name), "_", stamp))

@@ -1,0 +1,8 @@
+master_seed: 20260527
+n_var: 3
+n_loc: 10
+rank_signal: 5
+spatial_rho: 0.85
+cross_rho: 0.35
+noise_level: 0.001
+n_trials: 10
