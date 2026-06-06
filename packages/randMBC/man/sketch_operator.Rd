@@ -40,7 +40,7 @@ multiplying sketch matrices.
 }
 \examples{
 sk <- sketch_operator("gaussian", n = 100, s = 30)
-A <- matrix(rnorm(400), 40, 10)
+A <- matrix(rnorm(1000), 100, 10)
 SA <- apply_sketch(sk, A)
 dim(SA)
 }

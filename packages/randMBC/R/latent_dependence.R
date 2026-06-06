@@ -37,15 +37,22 @@ gaussianize_column <- function(values, reference) {
 #'
 #' @param values Matrix containing the target marginal values.
 #' @param scores Matrix whose columnwise ranks determine the rearrangement.
+#' @param ties_method Character. `"average"` or `"first"`, controlling how
+#'   ties are broken during ranking. Default `"average"`.
 #'
 #' @return A matrix with the marginals of `values` and the ordering induced by
 #'   `scores`.
 #' @noRd
-rank_restore_matrix <- function(values, scores) {
+rank_restore_matrix <- function(values, scores, ties_method = "average") {
     out <- matrix(0, nrow = nrow(values), ncol = ncol(values))
 
     for (j in seq_len(ncol(values))) {
-        ord <- order(scores[, j], na.last = TRUE)
+        if (ties_method == "first") {
+            rnk <- rank(scores[, j], ties.method = "first", na.last = TRUE)
+            ord <- sort.list(rnk)
+        } else {
+            ord <- order(scores[, j], na.last = TRUE)
+        }
         out[ord, j] <- sort(values[, j], na.last = TRUE)
     }
 

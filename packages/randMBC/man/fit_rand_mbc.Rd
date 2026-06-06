@@ -14,6 +14,10 @@ fit_rand_mbc(
   precision = c("double", "single", "half", "bfloat16"),
   orth_prec = c("double", "single"),
   lambda = 1e-06,
+  basis_mode = c("shared", "independent"),
+  ties_method = c("average", "first"),
+  seed = NULL,
+  return_diagnostics = TRUE,
   ratio_seq = rep(FALSE, ncol(x_hist)),
   trace = 0.05,
   trace_calc = 0.5 * trace,
@@ -42,6 +46,18 @@ fit_rand_mbc(
 
 \item{lambda}{Regularization parameter for the covariance approximation.}
 
+\item{basis_mode}{Character. `"shared"` uses the same sketch for source and
+target; `"independent"` draws separate sketches. Default `"shared"`.}
+
+\item{ties_method}{Character. `"average"` or `"first"`, passed to the
+rank-restoration step. Default `"average"`.}
+
+\item{seed}{Optional integer seed for the full pipeline. If provided, the
+pipeline is fully deterministic.}
+
+\item{return_diagnostics}{Logical. If `TRUE` (default), the output includes
+numerical and statistical diagnostic summaries.}
+
 \item{ratio_seq}{Logical vector marking columns that should use ratio-style
 QDM handling, for example precipitation-like variables.}
 
@@ -58,8 +74,8 @@ quantiles for ratio columns.}
 }
 \value{
 A list containing corrected future samples, corrected historical
-  samples, post-QDM marginals, transport diagnostics, and the fitted
-  covariance surrogates.
+  samples, post-QDM marginals, transport diagnostics, fitted covariance
+  surrogates, and (if `return_diagnostics`) structured diagnostic summaries.
 }
 \description{
 Runs the current randMBC backend: columnwise marginal adjustment, latent

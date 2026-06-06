@@ -1,0 +1,7 @@
+master_seed: 20260527
+n: 500
+d: 20
+s_vals: [50, 100, 200]
+sketch_prec: [double, single, half, bfloat16]
+solve_prec: double
+trials: 20

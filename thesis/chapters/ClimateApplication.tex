@@ -142,29 +142,28 @@ and making the covariance estimation problem dimensionally harder.
 The CCCma dataset is modest in size compared to full CMIP6 archives
 \cite{eyring2016cmip6}, but it has the right structure for a first
 application-facing test: the historical and future periods are already separated,
-the observational reference is provided, and the number of variables is large
-enough to make a low-rank approach potentially interesting. In particular, the
-dependence between precipitation and the thermodynamic variables is known to be
-poorly captured by GCMs, which gives the covariance-transport step a concrete
-target \cite{francois2020multivariate}.
+the observational reference is provided, and the dependence between
+precipitation and the thermodynamic variables is known to be poorly captured by
+GCMs, which gives the covariance-transport step a concrete target
+\cite{francois2020multivariate}.
 
 It must be noted, however, that the basic CCCma configuration includes only
 precipitation, temperature, and sea-level pressure, giving \(p = 3\). This is too
 small for a meaningful low-rank regime: with only three columns, the full
 covariance is a \(3 \times 3\) matrix whose randomized low-rank approximation
-offers no computational advantage. The dataset is therefore useful as a first
-functional test of the pipeline --- verifying that the transport map can be built
-and applied without error --- but not as a demonstration of the computational
-benefit of randomized low-rank approximation. To make the low-rank setting
-meaningful, one must construct larger multivariate states by combining variables,
-locations, lags, seasons, or spatial neighborhoods, thereby increasing \(p\) and
-making the covariance estimation problem dimensionally harder.
+offers no computational advantage. The bundled CCCma dataset is a useful
+functional test bed, but not by itself strong evidence of large-scale low-rank
+advantage. To make a low-rank regime meaningful, the state vector should be
+constructed by stacking variables, locations, lags, or seasonal blocks.
 
 For the present thesis, the dataset is used in two ways. First, it provides the
 real-data input for the full \texttt{randMBC} pipeline. Second, it informs the design
 of the climate-shaped synthetic data used in \Cref{ch:experiments}: the spectral
 profiles and block-dependence structure of the real data are used to calibrate the
 synthetic generators so that the controlled experiments remain application-relevant.
+
+% TODO: document the real Central Europe data path and ingestion pipeline
+% explicitly once the external data source and preprocessing scripts are fixed.
 
 \section{Workflow}
 

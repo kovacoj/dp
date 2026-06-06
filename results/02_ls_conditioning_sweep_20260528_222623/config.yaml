@@ -1,0 +1,7 @@
+master_seed: 20260527
+n: 500
+d: 20
+cond_nums: [1e+01, 1e+02, 1e+03, 1e+04, 1e+06]
+s_vals: [50, 100, 200]
+trials: 20
+method: gaussian

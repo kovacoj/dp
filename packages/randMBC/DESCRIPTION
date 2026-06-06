@@ -3,6 +3,8 @@ Type: Package
 Title: Randomized Multivariate Bias Correction Backend
 Version: 0.0.1
 Authors@R: person(given = "Thesis", family = "Author", role = c("aut", "cre"), email = "author@example.com")
+Author: Thesis Author
+Maintainer: Thesis Author <author@example.com>
 Description: Experimental backend for randomized low-rank covariance
     transport in multivariate climate bias correction. The package
     provides covariance sketching, regularized transport maps, and a

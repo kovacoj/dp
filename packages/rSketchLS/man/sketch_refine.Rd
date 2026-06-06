@@ -6,45 +6,44 @@
 \usage{
 sketch_refine(
   A,
-  b,
+  b_or_Y,
   s = NULL,
   method = c("gaussian", "rademacher", "srht"),
   sketch_prec = "double",
   solve_prec = "double",
   ref_prec = "double",
-  ref_steps = 3L
+  ref_steps = 3L,
+  seed = NULL
 )
 }
 \arguments{
 \item{A}{Numeric design matrix.}
 
-\item{b}{Numeric response vector with length equal to `nrow(A)`.}
+\item{b_or_Y}{Numeric response vector or matrix.}
 
-\item{s}{Integer sketch size. If `NULL`, defaults to `min(nrow(A), 2 *
-(ncol(A) + 1))`.}
+\item{s}{Integer sketch size.}
 
-\item{method}{Sketch family. One of `"gaussian"`, `"rademacher"`, or
-`"srht"`.}
+\item{method}{Sketch family.}
 
-\item{sketch_prec}{Precision used for the sketch and sketched products.
-Passed to [fl_round()].}
+\item{sketch_prec}{Precision for sketch and sketched products.}
 
-\item{solve_prec}{Precision used before solving the sketched system. Passed
-to [fl_round()].}
+\item{solve_prec}{Precision applied before solving.}
 
-\item{ref_prec}{Precision used when forming residuals during refinement.
-Passed to [fl_round()].}
+\item{ref_prec}{Precision used when forming residuals during refinement.}
 
 \item{ref_steps}{Integer number of refinement steps.}
+
+\item{seed}{Optional integer seed.}
 }
 \value{
-A list with the refined coefficient vector, residual diagnostics,
-  sketch and precision settings, and `ref_history`, a matrix recording the
+A list with the refined coefficient vector/matrix, residual
+  diagnostics, settings, and `ref_history`, a matrix recording the
   refinement step, residual norm, and solution norm.
 }
 \description{
 Computes an initial mixed-precision sketched solution and applies residual
-correction steps using the same sketch.
+correction steps using the same sketch. Supports both vector and matrix
+right-hand sides.
 }
 \examples{
 set.seed(1)

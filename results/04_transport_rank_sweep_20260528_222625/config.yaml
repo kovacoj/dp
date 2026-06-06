@@ -1,0 +1,9 @@
+master_seed: 20260527
+p: 30
+rank_vals: [5, 10, 15, 20, 25, 30]
+lambda: 0.01
+spectrum: exponential
+cond: 100
+basis_mode: shared
+precision: double
+n_trials: 20

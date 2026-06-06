@@ -122,6 +122,11 @@ not automatically guarantee an equally small perturbation in the minimizer. The
 condition number of \(SA\) is recorded because it is one of the main mechanisms
 that links these two behaviors.
 
+When the system is exactly consistent, however, the reference residual may be
+zero or extremely small, in which case the residual ratio ceases to be a stable or
+meaningful diagnostic. For that reason, the reported residual-ratio experiments in
+this chapter use additive noise \(b = Ax_\star + e\) with nonzero noise level.
+
 In addition, the implementations average the independent trials at each sketch
 size. If \(\hat x^{(1)},\dots,\hat x^{(m)}\) are the trial solutions, the code forms
 their mean and reports the mean absolute error of this averaged estimator relative
@@ -169,9 +174,9 @@ diagnostic baseline for the later mixed-precision work.
 
 \section{Least-Squares Sketch-Size Sweep}
 
-The first implemented experiment tests how the quality of a sketched solve changes as the sketch dimension increases. The setup follows the synthetic model from \Cref{sec:synth_ls_model} with \(n=1024\), \(d=20\), a planted solution \(x_\star = \mathbf{1}\), and additive Gaussian noise scaled to a signal-to-noise ratio of approximately \(10^{4}\), so that the reference residual is nonzero and the residual ratio is a meaningful diagnostic. A Gaussian sketch is used, the sketch dimension \(s\) is swept over the values
+The first implemented experiment tests how the quality of a sketched solve changes as the sketch dimension increases. The setup follows the synthetic model from \Cref{sec:synth_ls_model} with \(n=500\), \(d=20\), a planted solution \(x_\star = \mathbf{1}\), and additive Gaussian noise with noise level \(0.1\), so that the reference residual is nonzero and the residual ratio is a meaningful diagnostic. A Gaussian sketch is used, the sketch dimension \(s\) is swept over the values
 \[
-	s \in \{30,\,40,\,60,\,80,\,100,\,150,\,200,\,300\},
+	s \in \{30,\,60,\,100,\,150,\,200,\,300,\,400\},
 \]
 and \(20\) independent trials are drawn for each value.
 
@@ -180,28 +185,27 @@ and \(20\) independent trials are drawn for each value.
 \begin{figure}[t]
 	\centering
 	\includegraphics[width=0.85\textwidth]{figures/ls_res_ratio_vs_s.pdf}
-	\caption{Mean residual ratio versus sketch size for Gaussian sketching of a noisy least-squares problem with \(n=1024\), \(d=20\). Error bars indicate one standard deviation across \(20\) independent trials.}
+	\caption{Mean residual ratio versus sketch size for Gaussian sketching of a noisy least-squares problem with \(n=500\), \(d=20\). Error bars indicate one standard deviation across \(20\) independent trials.}
 	\label{fig:ls_res_ratio}
 \end{figure}
 
-\Cref{tab:ls_sweep} reports the mean residual ratio and mean relative solution error for each sketch size. Two observations are worth highlighting. First, the residual ratio approaches one much more slowly than the solution error approaches machine precision: the residual ratio is still approximately \(1.15\) at \(s=150\), whereas the solution error is already at the \(10^{-16}\) level. This confirms the theoretical expectation that residual preservation and solution preservation are different diagnostics, and that the solution error is governed mainly by the conditioning of \(SA\) rather than by the residual quality alone. Second, the solution error still improves with \(s\) even though the conditioning of \(SA\) may vary, because the overall perturbation scale decreases with the sketch dimension.
+\Cref{tab:ls_sweep} reports the mean residual ratio and mean relative solution error for each sketch size, now with one standard deviation across trials. Two observations are worth highlighting. First, the residual ratio decreases rapidly from \(1.73\) at \(s=30\) to about \(1.12\) by \(s=100\), and then flattens into a clear diminishing-returns regime near one. Second, the relative solution error decays more steadily, from roughly \(2.9 \times 10^{-2}\) at \(s=30\) to roughly \(5 \times 10^{-3}\) at \(s=400\). In this noisy regime the solution error no longer collapses to machine precision, so both diagnostics remain informative: the residual ratio records geometric preservation of the least-squares objective, while the solution error records the quality of the recovered coefficient vector.
 
 \begin{table}[t]
 	\centering
-	\caption{Least-squares sketch-size sweep: Gaussian sketch, \(n=1024\), \(d=20\), \(20\) trials per sketch size. Residual ratio is \(\|A\hat x - b\|_2 / \|A x_{\mathrm{ref}} - b\|_2\); solution error is \(\|\hat x - x_{\mathrm{ref}}\|_2 / \|x_{\mathrm{ref}}\|_2\).}
+	\caption{Least-squares sketch-size sweep: Gaussian sketch, \(n=500\), \(d=20\), noise level \(0.1\), \(20\) trials per sketch size. Residual ratio is \(\|A\hat x - b\|_2 / \|A x_{\mathrm{ref}} - b\|_2\); solution error is \(\|\hat x - x_{\mathrm{ref}}\|_2 / \|x_{\mathrm{ref}}\|_2\).}
 	\label{tab:ls_sweep}
 	\begin{tabular}{rcc}
 		\toprule
-		\(s\) & Mean residual ratio & Mean rel.\ solution error \\
+		\(s\) & Mean res.\ ratio \(\pm\) sd & Mean rel.\ sol.\ error \(\pm\) sd \\
 		\midrule
-		30    & 3.049               & \(1.18 \times 10^{-15}\)  \\
-		40    & 1.839               & \(7.40 \times 10^{-16}\)  \\
-		60    & 1.851               & \(7.56 \times 10^{-16}\)  \\
-		80    & 1.829               & \(7.37 \times 10^{-16}\)  \\
-		100   & 1.295               & \(5.64 \times 10^{-16}\)  \\
-		150   & 1.152               & \(5.20 \times 10^{-16}\)  \\
-		200   & 1.096               & \(4.88 \times 10^{-16}\)  \\
-		300   & 1.003               & \(4.79 \times 10^{-16}\)  \\
+		30    & \(1.73 \pm 0.28\)           & \(0.0291 \pm 0.0074\)             \\
+		60    & \(1.21 \pm 0.08\)           & \(0.0143 \pm 0.0032\)             \\
+		100   & \(1.12 \pm 0.04\)           & \(0.0105 \pm 0.0021\)             \\
+		150   & \(1.08 \pm 0.02\)           & \(0.0086 \pm 0.0013\)             \\
+		200   & \(1.05 \pm 0.01\)           & \(0.0066 \pm 0.0011\)             \\
+		300   & \(1.04 \pm 0.01\)           & \(0.0055 \pm 0.0008\)             \\
+		400   & \(1.03 \pm 0.01\)           & \(0.0052 \pm 0.0007\)             \\
 		\bottomrule
 	\end{tabular}
 \end{table}
@@ -351,71 +355,73 @@ for comparison.
 
 \section{Covariance Transport Results}
 
-The second set of experiments tests the theory from \Cref{ch:randcovtransport} directly. A covariance operator with exponential spectral decay is generated using \texttt{generate\_cov\_operator} with \(p=30\) and condition number \(100\). The target rank is swept over \(r \in \{5,10,15,20,25\}\), the regularization parameter over \(\lambda \in \{10^{-2}, 10^{-4}, 10^{-6}\}\), and the sketch precision over double and single. Ten independent trials are drawn for each parameter combination.
+The second set of experiments tests the theory from \Cref{ch:randcovtransport} directly. A covariance operator with exponential spectral decay is generated using \texttt{generate\_cov\_operator} with \(p=30\) and condition number \(100\). The target rank is swept over \(r \in \{5,10,15,20,25,30\}\). The first post-processed slice considered here fixes \(\lambda = 10^{-2}\), uses a Gaussian sketch in double precision, and averages over independent trials.
 
-\Cref{tab:ct_double} reports the mean covariance error and transport error for double precision. The most important observation is the strong dependence on \(\lambda\): at \(\lambda = 10^{-6}\), the transport error is two orders of magnitude larger than at \(\lambda = 10^{-2}\) even though the covariance errors are comparable. This is exactly the inverse-square-root amplification mechanism predicted by \Cref{thm:cov_transport_perturbation} in \Cref{ch:randcovtransport}. The covariance error itself decreases slowly with rank, reflecting the exponential but not extremely steep spectral decay.
+\Cref{tab:ct_double} reports the mean covariance error and transport error for this double-precision rank sweep, now with one standard deviation across trials. The transport error decreases substantially as the rank grows, from \(2.33 \pm 0.18\) at rank \(5\) to \(1.07 \pm 0.10\) at rank \(30\). The covariance error also improves from rank \(5\) to rank \(15\), but then largely plateaus near \(0.67\). This is useful numerically: even after the raw covariance surrogate has entered a shallow plateau, the induced transport map still benefits from increased rank.
 
 \begin{table}[t]
 	\centering
-	\caption{Covariance transport sweep: exponential spectrum, \(p=30\), double precision, Gaussian sketch, \(10\) trials. All errors are absolute: \(\|C - \widehat C\|_2\) and \(\|T_\lambda - \widehat T_\lambda\|_2\). Means over trials; per-trial variability not yet available in post-processed form.}
+	\caption{Covariance transport rank sweep at fixed \(\lambda = 10^{-2}\): exponential spectrum, \(p=30\), double precision, Gaussian sketch. All entries are reported as mean \(\pm\) standard deviation across trials. Errors are absolute: \(\|C - \widehat C\|_2\) and \(\|T_\lambda - \widehat T_\lambda\|_2\).}
 	\label{tab:ct_double}
-	\begin{tabular}{rccc}
+	\begin{tabular}{rcc}
 		\toprule
-		Rank \(r\) & \(\lambda\) & Mean \(\|C - \widehat C\|_2\) & Mean \(\|T_\lambda - \widehat T_\lambda\|_2\) \\
+		Rank \(r\) & Mean \(\|C - \widehat C\|_2\) \(\pm\) sd & Mean \(\|T_\lambda - \widehat T_\lambda\|_2\) \(\pm\) sd \\
 		\midrule
-		5          & \(10^{-2}\) & 0.87                          & 2.35                                          \\
-		5          & \(10^{-4}\) & 0.85                          & 25.5                                          \\
-		5          & \(10^{-6}\) & 0.84                          & 257.5                                         \\
-		\midrule
-		10         & \(10^{-2}\) & 0.75                          & 2.09                                          \\
-		10         & \(10^{-4}\) & 0.76                          & 23.1                                          \\
-		10         & \(10^{-6}\) & 0.72                          & 232.2                                         \\
-		\midrule
-		15         & \(10^{-2}\) & 0.68                          & 1.66                                          \\
-		15         & \(10^{-4}\) & 0.65                          & 17.8                                          \\
-		15         & \(10^{-6}\) & 0.67                          & 189.4                                         \\
-		\midrule
-		20         & \(10^{-2}\) & 0.69                          & 1.28                                          \\
-		20         & \(10^{-4}\) & 0.65                          & 13.6                                          \\
-		20         & \(10^{-6}\) & 0.72                          & 134.5                                         \\
-		\midrule
-		25         & \(10^{-2}\) & 0.65                          & 1.13                                          \\
-		25         & \(10^{-4}\) & 0.65                          & 8.89                                          \\
-		25         & \(10^{-6}\) & 0.66                          & 91.0                                          \\
+		5          & \(0.845 \pm 0.069\)                      & \(2.33 \pm 0.18\)                                        \\
+		10         & \(0.727 \pm 0.054\)                      & \(2.08 \pm 0.14\)                                        \\
+		15         & \(0.668 \pm 0.064\)                      & \(1.66 \pm 0.09\)                                        \\
+		20         & \(0.681 \pm 0.063\)                      & \(1.30 \pm 0.09\)                                        \\
+		25         & \(0.674 \pm 0.055\)                      & \(1.10 \pm 0.06\)                                        \\
+		30         & \(0.678 \pm 0.075\)                      & \(1.07 \pm 0.10\)                                        \\
 		\bottomrule
 	\end{tabular}
 \end{table}
 
 \subsection{Precision comparison}
 
-\Cref{tab:ct_precision} compares single and double precision at selected parameter combinations. The key finding is that single and double precision produce nearly identical results across all tested regimes. At rank 20 and \(\lambda = 10^{-6}\), for example, the transport errors are \(134.5\) (double) and \(136.6\) (single). This is not an accident: in all tested cases, the randomized truncation error and the regularization-dominated amplification error are both much larger than the arithmetic precision floor. The floating-point contribution is effectively hidden beneath the approximation error, exactly as the balancing-inexactness principle predicts.
+\Cref{tab:ct_precision} compares single and double precision at selected parameter combinations and reports both covariance and transport errors with one standard deviation across trials. The key finding is that single and double precision produce nearly identical results in the currently relevant \(\lambda = 10^{-2}\) regime. At rank \(20\), for example, the covariance errors are \(0.661 \pm 0.092\) and \(0.663 \pm 0.054\), while the transport errors are \(1.31 \pm 0.11\) and \(1.30 \pm 0.08\) for double and single precision respectively. This is exactly the balancing-inexactness picture anticipated in \Cref{ch:mixedprecision}: the dominant error is still the randomized approximation, not the arithmetic format.
 
-This finding is simultaneously reassuring and limiting. It confirms that single precision is safe in the current approximation regime, but it also means that the present experiments cannot yet detect the precision-visible regime. To observe the crossover, one would need either a higher target rank (so that truncation error falls below the arithmetic floor) or a more aggressive regularization (so that the transport map is not dominated by the inverse-square-root instability).
+This finding is simultaneously reassuring and limiting. It confirms that single precision is safe in the current approximation regime, but it also means that the present experiments cannot yet detect the precision-visible regime. To observe the crossover, one would need either a higher target rank, so that truncation error falls below the arithmetic floor, or a more favorable spectral and regularization regime in which the transport map is not already dominated by approximation effects.
 
 \begin{table}[t]
 	\centering
-	\caption{Precision comparison for selected parameter combinations. Mean absolute transport error \(\|T_\lambda - \widehat T_\lambda\|_2\) over \(10\) trials. Per-trial variability not yet available.}
+	\caption{Precision comparison for selected parameter combinations at \(\lambda = 10^{-2}\). Each entry is reported as mean \(\pm\) standard deviation across trials for covariance and transport error.}
 	\label{tab:ct_precision}
-	\begin{tabular}{rccc}
+	\begin{tabular}{rccccc}
 		\toprule
-		Rank \(r\) & \(\lambda\) & Double precision & Single precision \\
+		Rank \(r\) & \(\lambda\) & Double cov.\ error \(\pm\) sd & Double transport \(\pm\) sd & Single cov.\ error \(\pm\) sd & Single transport \(\pm\) sd \\
 		\midrule
-		5          & \(10^{-2}\) & 2.35             & 2.38             \\
-		5          & \(10^{-6}\) & 257.5            & 259.6            \\
-		20         & \(10^{-2}\) & 1.28             & 1.33             \\
-		20         & \(10^{-6}\) & 134.5            & 136.6            \\
-		25         & \(10^{-2}\) & 1.13             & 1.10             \\
-		25         & \(10^{-6}\) & 91.0             & 86.1             \\
+		5          & \(10^{-2}\) & \(0.868 \pm 0.077\)           & \(2.35 \pm 0.15\)           & \(0.822 \pm 0.065\)           & \(2.38 \pm 0.23\)           \\
+		20         & \(10^{-2}\) & \(0.661 \pm 0.092\)           & \(1.31 \pm 0.11\)           & \(0.663 \pm 0.054\)           & \(1.30 \pm 0.08\)           \\
 		\bottomrule
 	\end{tabular}
 \end{table}
 
-\Cref{fig:ct_transport} shows the mean transport error as a function of target rank for each regularization level (double precision). The curves separate dramatically by \(\lambda\), with the \(\lambda = 10^{-2}\) curve remaining near unity while the \(\lambda = 10^{-6}\) curve stays above \(80\) even at rank \(25\). This confirms that the dominant bottleneck is the inverse-square-root conditioning, not the rank of the approximation.
+\begin{table}[t]
+	\centering
+	\caption{Shared versus independent basis comparison for covariance transport. Each entry is reported as mean \(\pm\) standard deviation across trials. The covariance diagnostic is the source-side covariance error \(\|C_X - \widehat C_X\|_2\).}
+	\label{tab:ct_basis}
+	\begin{tabular}{rcccc}
+		\toprule
+		Rank \(r\) & \(\lambda\) & Basis mode  & Pearson error \(\pm\) sd & Cov.\ error in \(X\) \(\pm\) sd \\
+		\midrule
+		10         & \(10^{-6}\) & shared      & \(1.53 \pm 0.053\)       & \(11.29 \pm 0.96\)              \\
+		10         & \(10^{-6}\) & independent & \(1.54 \pm 0.066\)       & \(11.69 \pm 1.12\)              \\
+		\midrule
+		20         & \(10^{-2}\) & shared      & \(1.58 \pm 0.065\)       & \(7.16 \pm 0.80\)               \\
+		20         & \(10^{-2}\) & independent & \(1.56 \pm 0.048\)       & \(7.39 \pm 0.87\)               \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+\Cref{tab:ct_basis} adds a structural comparison between a shared reduced basis and independent reduced bases. At rank \(10\) and \(\lambda = 10^{-6}\), the shared basis gives slightly smaller Pearson and covariance errors; at rank \(20\) and \(\lambda = 10^{-2}\), the Pearson errors are nearly indistinguishable, while the shared basis still yields a modestly smaller covariance error in the source variable. The effect is not dramatic in this synthetic setup, but it is consistent with the expectation that a shared coordinate system can slightly stabilize the transport construction.
+
+\Cref{fig:ct_transport} shows the mean transport error as a function of target rank at fixed \(\lambda = 10^{-2}\) in double precision. The curve decreases steadily from rank \(5\) through rank \(30\), but with visibly diminishing returns once the rank reaches roughly \(20\). This agrees with \Cref{tab:ct_double}: the transport map continues to improve beyond the point at which the covariance error has mostly flattened, but the incremental gains become smaller.
 
 \begin{figure}[t]
 	\centering
 	\includegraphics[width=0.85\textwidth]{figures/ct_transport_error_vs_rank.pdf}
-	\caption{Mean absolute transport error versus target rank for three regularization levels (exponential spectrum, \(p=30\), double precision, Gaussian sketch). The vertical axis is logarithmic.}
+	\caption{Mean absolute transport error versus target rank at fixed \(\lambda = 10^{-2}\) (exponential spectrum, \(p=30\), double precision, Gaussian sketch).}
 	\label{fig:ct_transport}
 \end{figure}
 

@@ -15,6 +15,14 @@
 #' @param precision Simulated precision used in the covariance-action products.
 #' @param orth_prec Simulated precision used before orthogonalization.
 #' @param lambda Regularization parameter for the covariance approximation.
+#' @param basis_mode Character. `"shared"` uses the same sketch for source and
+#'   target; `"independent"` draws separate sketches. Default `"shared"`.
+#' @param ties_method Character. `"average"` or `"first"`, passed to the
+#'   rank-restoration step. Default `"average"`.
+#' @param seed Optional integer seed for the full pipeline. If provided, the
+#'   pipeline is fully deterministic.
+#' @param return_diagnostics Logical. If `TRUE` (default), the output includes
+#'   numerical and statistical diagnostic summaries.
 #' @param ratio_seq Logical vector marking columns that should use ratio-style
 #'   QDM handling, for example precipitation-like variables.
 #' @param trace Dry-day threshold for ratio columns. Values below this threshold
@@ -26,8 +34,8 @@
 #' @param ratio_max_trace Threshold below which `ratio_max` is enforced.
 #'
 #' @return A list containing corrected future samples, corrected historical
-#'   samples, post-QDM marginals, transport diagnostics, and the fitted
-#'   covariance surrogates.
+#'   samples, post-QDM marginals, transport diagnostics, fitted covariance
+#'   surrogates, and (if `return_diagnostics`) structured diagnostic summaries.
 #' @examples
 #' set.seed(2)
 #' x_hist <- matrix(rnorm(60), nrow = 20, ncol = 3)
@@ -46,6 +54,10 @@ fit_rand_mbc <- function(
     precision = c("double", "single", "half", "bfloat16"),
     orth_prec = c("double", "single"),
     lambda = 1e-6,
+    basis_mode = c("shared", "independent"),
+    ties_method = c("average", "first"),
+    seed = NULL,
+    return_diagnostics = TRUE,
     ratio_seq = rep(FALSE, ncol(x_hist)),
     trace = 0.05,
     trace_calc = 0.5 * trace,
@@ -55,6 +67,10 @@ fit_rand_mbc <- function(
     sketch <- match.arg(sketch)
     precision <- match.arg(precision)
     orth_prec <- match.arg(orth_prec)
+    basis_mode <- match.arg(basis_mode)
+    ties_method <- match.arg(ties_method)
+
+    if (!is.null(seed)) set.seed(seed)
 
     validate_rand_mbc_inputs(
         x_hist,
@@ -96,6 +112,7 @@ fit_rand_mbc <- function(
         orth_prec = orth_prec,
         lambda = lambda
     )
+    if (basis_mode == "shared" && !is.null(seed)) set.seed(seed + 1L)
     target_cov <- rand_cov_approx(
         latent_target,
         rank = rank,
@@ -110,19 +127,21 @@ fit_rand_mbc <- function(
     latent_hist_corrected <- latent_source %*% transport_fit$transport
     latent_fut_corrected <- latent_future %*% transport_fit$transport
 
-    historical_corrected <- rank_restore_matrix(marginals$x_hist, latent_hist_corrected)
-    corrected <- rank_restore_matrix(marginals$x_fut, latent_fut_corrected)
+    historical_corrected <- rank_restore_matrix(marginals$x_hist, latent_hist_corrected, ties_method = ties_method)
+    corrected <- rank_restore_matrix(marginals$x_fut, latent_fut_corrected, ties_method = ties_method)
 
     list(
         corrected = corrected,
         historical_corrected = historical_corrected,
         marginals = marginals,
-        diagnostics = rand_mbc_diagnostics(
-            historical_corrected,
-            y_hist,
-            source_cov,
-            target_cov
-        ),
+        diagnostics = if (return_diagnostics) {
+            rand_mbc_diagnostics(
+                historical_corrected,
+                y_hist,
+                source_cov,
+                target_cov
+            )
+        } else NULL,
         transport = transport_fit$transport,
         covariance = list(source = source_cov, target = target_cov),
         latent = list(hist = latent_hist_corrected, fut = latent_fut_corrected),
@@ -130,6 +149,9 @@ fit_rand_mbc <- function(
         sketch = sketch,
         lambda = lambda,
         rank = min(as.integer(rank), ncol(x_hist)),
+        basis_mode = basis_mode,
+        ties_method = ties_method,
+        seed = seed,
         ratio_seq = marginals$controls$ratio_seq,
         runtime = proc.time()[[3L]] - start
     )

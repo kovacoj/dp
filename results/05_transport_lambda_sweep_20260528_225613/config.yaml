@@ -1,0 +1,7 @@
+master_seed: 20260527
+p: 30
+rank: 20
+lambda_vals: [1e-06, 1e-04, 1e-02, 1e-01]
+spectrum: exponential
+cond: 100
+n_trials: 20
