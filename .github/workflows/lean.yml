@@ -1,0 +1,20 @@
+name: Lean
+
+on:
+  push:
+    paths:
+      - "formal/**"
+      - ".github/workflows/lean.yml"
+  pull_request:
+    paths:
+      - "formal/**"
+      - ".github/workflows/lean.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: leanprover/lean-action@v1
+        with:
+          working-directory: formal
